@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Blood Grouping System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #c00000;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .result-badge {
+            font-size: 3rem;
+            line-height: 1;
+            padding: 2rem;
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border: 4px solid white;
+        }
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        .status-dot {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .dot-positive { background-color: #ef4444; } /* red */
+        .dot-negative { background-color: #22c55e; } /* green */
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#c00000]">Automated Blood Grouping System</h1>
+            <p class="mt-2 text-lg text-gray-600">Combining a Python/Flask backend with a modern web interface.</p>
+        </header>
+
+        <main class="card p-6 md:p-8">
+            <!-- Step 1: Upload -->
+            <div id="upload-section">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800 border-b pb-2">Step 1: Upload Blood Sample Image</h2>
+                <p class="text-gray-600 mb-4">Upload a single image containing all four test sections (Anti-A, Anti-B, Anti-D, H-Antigen). The app will automatically split and analyze them.</p>
+                <div class="flex items-center justify-center w-full">
+                    <label for="imageUpload" class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
+                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                            <p class="text-xs text-gray-500">PNG, JPG, or JPEG</p>
+                        </div>
+                        <input id="imageUpload" type="file" class="hidden" accept="image/*" />
+                    </label>
+                </div>
+                <div class="text-center mt-6">
+                    <button id="analyzeButton" class="bg-[#c00000] text-white font-bold py-3 px-12 rounded-lg hover:bg-red-800 transition-colors shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                        Analyze Blood Type
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loader" class="text-center py-8 hidden">
+                <div class="loader inline-block"></div>
+                <p id="loader-text" class="mt-4 text-gray-600 font-medium">Analyzing image...</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="hidden mt-6">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2 text-center">Analysis Complete</h2>
+                
+                <!-- Final Result Display -->
+                <div id="final-result-display" class="mb-8 p-6 rounded-xl flex flex-col md:flex-row items-center justify-center gap-8 bg-gray-50">
+                    <!-- Populated by JS -->
+                </div>
+                
+                <!-- Processing Stages Display -->
+                <h3 class="text-xl font-semibold mb-4 text-center text-gray-700">Detailed Section Analysis</h3>
+                <div id="analysis-grid" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="text-center mt-8">
+                    <button id="resetButton" class="bg-gray-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-700 transition-colors shadow-md">
+                        Analyze Another Sample
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const resetButton = document.getElementById('resetButton');
+        const uploadSection = document.getElementById('upload-section');
+        const resultsSection = document.getElementById('results-section');
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        const finalResultDisplay = document.getElementById('final-result-display');
+        const analysisGrid = document.getElementById('analysis-grid');
+
+        let selectedFile = null;
+
+        imageUpload.addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                analyzeButton.disabled = false;
+                // Update label to show filename
+                const label = imageUpload.parentElement;
+                label.querySelector('p.mb-2').innerHTML = `<span class="font-semibold">${selectedFile.name}</span> selected`;
+            }
+        });
+
+        analyzeButton.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            uploadSection.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Server error');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                alert(`Analysis failed: ${error.message}`);
+                resetUI();
+            } finally {
+                loader.classList.add('hidden');
+            }
+        });
+
+        function displayResults(data) {
+            resultsSection.classList.remove('hidden');
+
+            // Display final blood type
+            let colorClass = 'bg-blue-500';
+            if (data.blood_type.includes('A')) colorClass = 'bg-green-500';
+            if (data.blood_type.includes('B')) colorClass = 'bg-yellow-400';
+            if (data.blood_type.includes('O')) colorClass = 'bg-purple-500';
+            if (data.blood_type.includes('AB')) colorClass = 'bg-pink-500';
+            if (data.blood_type.includes('Bombay')) colorClass = 'bg-gray-700';
+            
+            finalResultDisplay.innerHTML = `
+                <div>
+                    <h3 class="text-xl font-medium text-gray-600 mb-2">Determined Blood Type:</h3>
+                    <p class="text-sm text-gray-500">Analysis performed using: <b>${data.model_used}</b></p>
+                </div>
+                <div class="result-badge text-white ${colorClass}">
+                    <span>${data.blood_type}</span>
+                </div>
+            `;
+
+            // Display detailed analysis for each section
+            analysisGrid.innerHTML = ''; // Clear previous results
+            data.analysis.forEach(res => {
+                const cardHTML = `
+                    <div class="card p-4">
+                        <h4 class="font-semibold text-lg mb-2">${res.name}</h4>
+                        <div class="mb-2">
+                             <span class="status-dot ${res.agglutination ? 'dot-positive' : 'dot-negative'}"></span>
+                             <span class="font-medium">${res.agglutination ? 'Agglutination Positive' : 'Agglutination Negative'}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Original</p>
+                                <img src="data:image/png;base64,${res.original_b64}" class="rounded-md border" alt="Original section for ${res.name}">
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Segmented</p>
+                                <img src="data:image/png;base64,${res.segmented_b64}" class="rounded-md border" alt="Segmented section for ${res.name}">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                analysisGrid.innerHTML += cardHTML;
+            });
+        }
+
+        resetButton.addEventListener('click', resetUI);
+
+        function resetUI() {
+            selectedFile = null;
+            imageUpload.value = '';
+            analyzeButton.disabled = true;
+            
+            const label = imageUpload.parentElement;
+            label.querySelector('p.mb-2').innerHTML = `<span class="font-semibold">Click to upload</span> or drag and drop`;
+
+            resultsSection.classList.add('hidden');
+            uploadSection.classList.remove('hidden');
+            loader.classList.add('hidden');
+            finalResultDisplay.innerHTML = '';
+            analysisGrid.innerHTML = '';
+        }
+
+    </script>
+</body>
+</html>
