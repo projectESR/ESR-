@@ -7,7 +7,7 @@
   "scripts": {
     "start": "NODE_ENV=development electron .",
     "pyinstaller": "pyinstaller --noconfirm --onefile --windowed --add-data 'templates:templates' --add-data 'models:models' --add-data 'schema.sql:.' --name app app.py --distpath dist_py",
-    "build": "npm run pyinstaller && electron-builder"
+    "build": "npm run pyinstaller && npx electron-builder"
   },
   "devDependencies": {
     "electron": "^28.0.0",
