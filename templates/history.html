@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Report History{% endblock %}
+
+{% block content %}
+<style>
+    .card {
+        background: var(--card-bg);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 2rem;
+    }
+    h1 { color: #fff; font-weight: 800; }
+    .report-list { list-style: none; padding: 0; }
+    .report-item {
+        background: rgba(255,255,255,0.05);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.3s;
+    }
+    .report-item:hover { background: rgba(255,255,255,0.1); }
+    .report-item a {
+        color: var(--text-color);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    .report-item .meta { font-size: 0.9rem; color: var(--text-muted); }
+    .report-item .blood-type { font-size: 1.5rem; font-weight: 800; color: var(--accent-color); }
+</style>
+
+<div class="card">
+    <h1>Report History</h1>
+    {% if reports %}
+        <ul class="report-list">
+            {% for report in reports %}
+                <li class="report-item">
+                    <div>
+                        <a href="{{ url_for('report', report_id=report.id) }}">Report #{{ report.id }}</a>
+                        <div class="meta">{{ report.timestamp.split('.')[0] }}</div>
+                    </div>
+                    <div class="blood-type">{{ report.blood_type }}</div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No reports found. Perform an analysis to save a new report.</p>
+    {% endif %}
+</div>
+{% endblock %}

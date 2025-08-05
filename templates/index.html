@@ -1,112 +1,230 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blood Grouping AI</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f0f2f5; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; max-width: 600px; width: 90%; }
-        h1 { color: #d92c2c; }
-        p { color: #555; }
-        input[type="file"] { border: 2px dashed #ccc; padding: 1rem; border-radius: 8px; cursor: pointer; display: block; width: calc(100% - 2.5rem); margin: 1.5rem auto; }
-        input[type="file"]:hover { border-color: #d92c2c; }
-        button { background-color: #d92c2c; color: white; border: none; padding: 0.8rem 1.5rem; font-size: 1rem; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; }
-        button:hover { background-color: #a82222; }
-        #spinner { border: 4px solid rgba(0, 0, 0, .1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #d92c2c; animation: spin 1s ease infinite; margin: 2rem auto; display: none; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #results { margin-top: 2rem; text-align: left; }
-        #results img { max-width: 100%; border-radius: 8px; margin-bottom: 1rem; }
-        .result-card { background: #fafafa; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; }
-        .result-card h2 { margin: 0; font-size: 2.5rem; color: #d92c2c; }
-        .result-card p { margin: 0.2rem 0; }
-        table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
-        th, td { padding: 0.75rem; border: 1px solid #ddd; }
-        th { background-color: #f2f2f2; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🩸 AI Blood Group Analyzer</h1>
-        <p>Upload an image of a blood grouping test card to determine the blood type.</p>
-        <form id="upload-form">
-            <input type="file" id="file-input" name="file" accept="image/*" required>
-            <button type="submit">Analyze Blood Type</button>
-        </form>
-        <div id="spinner"></div>
-        <div id="results" style="display: none;">
-            <div class="result-card">
-                <p>Predicted Blood Type:</p>
-                <h2 id="blood-type"></h2>
-            </div>
-            <h3>Analysis Details</h3>
-            <img id="uploaded-image" src="" alt="Uploaded Test Card">
-            <table id="analysis-table">
-                <thead>
-                    <tr><th>Test Section</th><th>Result</th><th>Confidence</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-            <p style="font-size: 0.8em; color: #888; text-align: center; margin-top: 1rem;">Model: <span id="model-used"></span></p>
+{% extends "base.html" %}
+{% block title %}New Analysis{% endblock %}
+
+{% block content %}
+<style>
+    /* All the styles from the previous version are still valid */
+    .container {
+        width: 100%;
+        max-width: 1200px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    @media (min-width: 1024px) { .container { grid-template-columns: 400px 1fr; } }
+    .card {
+        background: var(--card-bg);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 2rem;
+    }
+    .header { text-align: center; }
+    .header h1 { font-weight: 800; font-size: 1.8rem; color: #fff; }
+    .header p { font-size: 1rem; margin-top: 0.5rem; color: var(--text-muted); }
+    #upload-area {
+        border: 2px dashed var(--border-color);
+        border-radius: 12px;
+        padding: 2.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 1rem;
+    }
+    #upload-area:hover, #upload-area.drag-over {
+        border-color: var(--accent-color);
+        background-color: rgba(230, 57, 70, 0.1);
+    }
+    #upload-area p { margin: 0; font-weight: 600; font-size: 1.1rem; }
+    #upload-area span { font-size: 0.9rem; color: var(--text-muted); }
+    #submit-btn, #webcam-btn {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        padding: 0.9rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 700;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+        width: 100%;
+        margin-top: 1rem;
+    }
+    #webcam-btn {
+        background-color: var(--secondary-accent);
+        margin-top: 0.5rem;
+    }
+    #submit-btn:disabled { background-color: rgba(241, 250, 238, 0.2); color: var(--text-muted); cursor: not-allowed; }
+    #spinner { border: 4px solid rgba(255, 255, 255, 0.2); width: 24px; height: 24px; border-radius: 50%; border-left-color: white; animation: spin 1s ease infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #welcome-card { text-align: center; }
+    #welcome-card svg { width: 80px; height: 80px; color: var(--text-muted); margin-bottom: 1rem; }
+    .section-title { font-size: 1.25rem; font-weight: 700; color: #fff; }
+
+    /* Webcam Modal Styles */
+    .modal {
+        display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+        width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);
+        align-items: center; justify-content: center;
+    }
+    .modal-content {
+        background: var(--card-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+        padding: 2rem; border-radius: 16px; border: 1px solid var(--border-color);
+        width: 90%; max-width: 640px; text-align: center;
+    }
+    #webcam-feed { width: 100%; border-radius: 8px; }
+    #snap-btn { margin-top: 1rem; }
+</style>
+
+<div class="container">
+    <!-- Left Column: Upload & Control -->
+    <div class="card control-panel">
+        <div class="header">
+            <h1>New Analysis</h1>
+            <p>Upload a test card or use your webcam.</p>
         </div>
+        
+        <form id="upload-form">
+            <input type="file" id="file-input" accept="image/*" hidden>
+            <div id="upload-area">
+                <p id="upload-text">Click or drag file to upload</p>
+                <span id="file-name"></span>
+            </div>
+            <button type="submit" id="submit-btn" disabled>
+                <span id="button-text">Analyze & Save Report</span>
+                <div id="spinner" style="display: none;"></div>
+            </button>
+        </form>
+        <button id="webcam-btn">Use Webcam</button>
     </div>
 
-    <script>
-        const form = document.getElementById('upload-form');
-        const fileInput = document.getElementById('file-input');
-        const spinner = document.getElementById('spinner');
-        const resultsDiv = document.getElementById('results');
-        const bloodTypeEl = document.getElementById('blood-type');
-        const analysisTableBody = document.querySelector('#analysis-table tbody');
-        const uploadedImageEl = document.getElementById('uploaded-image');
-        const modelUsedEl = document.getElementById('model-used');
+    <!-- Right Column: Welcome -->
+    <div id="right-panel">
+        <div class="card" id="welcome-card">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            <h2 class="section-title" style="justify-content: center;">Awaiting Analysis</h2>
+            <p>Your detailed report will be saved and displayed here once an image is processed.</p>
+        </div>
+    </div>
+</div>
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+<!-- Webcam Modal -->
+<div id="webcam-modal" class="modal">
+    <div class="modal-content">
+        <h2>Live Camera Feed</h2>
+        <video id="webcam-feed" autoplay playsinline></video>
+        <button id="snap-btn" class="submit-btn-style">Snap Photo</button>
+    </div>
+</div>
+
+
+<script>
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const uploadText = document.getElementById('upload-text');
+    const fileNameEl = document.getElementById('file-name');
+    const submitBtn = document.getElementById('submit-btn');
+    const buttonText = document.getElementById('button-text');
+    const spinner = document.getElementById('spinner');
+    const webcamBtn = document.getElementById('webcam-btn');
+    const webcamModal = document.getElementById('webcam-modal');
+    const webcamFeed = document.getElementById('webcam-feed');
+    const snapBtn = document.getElementById('snap-btn');
+    let stream;
+
+    // --- Event Listeners ---
+    uploadArea.addEventListener('click', () => fileInput.click());
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => uploadArea.addEventListener(eventName, preventDefaults, false));
+    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+    ['dragenter', 'dragover'].forEach(eventName => uploadArea.addEventListener(eventName, () => uploadArea.classList.add('drag-over'), false));
+    ['dragleave', 'drop'].forEach(eventName => uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('drag-over'), false));
+    uploadArea.addEventListener('drop', handleDrop, false);
+    fileInput.addEventListener('change', handleFileSelect);
+    webcamBtn.addEventListener('click', openWebcam);
+    snapBtn.addEventListener('click', snapPhoto);
+
+    // Close modal if clicked outside of content
+    window.onclick = function(event) {
+        if (event.target == webcamModal) {
+            stream.getTracks().forEach(track => track.stop());
+            webcamModal.style.display = "none";
+        }
+    }
+
+    function handleDrop(e) { handleFiles(e.dataTransfer.files); }
+    function handleFileSelect(e) { handleFiles(e.target.files); }
+    function handleFiles(files) {
+        if (files.length > 0) {
+            fileInput.files = files;
+            uploadText.style.display = 'none';
+            fileNameEl.textContent = files[0].name;
+            submitBtn.disabled = false;
+        }
+    }
+
+    async function openWebcam() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            webcamFeed.srcObject = stream;
+            webcamModal.style.display = 'flex';
+        } catch (err) {
+            console.error("Error accessing webcam: ", err);
+            alert("Could not access webcam. Please ensure you have a camera and have granted permission.");
+        }
+    }
+
+    function snapPhoto() {
+        const canvas = document.createElement('canvas');
+        canvas.width = webcamFeed.videoWidth;
+        canvas.height = webcamFeed.videoHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(webcamFeed, 0, 0, canvas.width, canvas.height);
+        
+        // Stop the webcam stream
+        stream.getTracks().forEach(track => track.stop());
+        webcamModal.style.display = 'none';
+
+        canvas.toBlob(blob => {
+            const file = new File([blob], "webcam_capture.jpg", { type: "image/jpeg" });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
             
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            // Trigger analysis
+            handleFiles(fileInput.files);
+            submitBtn.click();
+        }, 'image/jpeg');
+    }
 
-            spinner.style.display = 'block';
-            resultsDiv.style.display = 'none';
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!fileInput.files.length) return;
 
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
 
-                const data = await response.json();
+        spinner.style.display = 'block';
+        buttonText.style.display = 'none';
+        submitBtn.disabled = true;
 
-                if (response.ok) {
-                    bloodTypeEl.textContent = data.blood_type || 'Error';
-                    
-                    uploadedImageEl.src = `data:image/jpeg;base64,${data.image_data}`;
-                    modelUsedEl.textContent = data.model_used;
-                    
-                    analysisTableBody.innerHTML = ''; // Clear previous results
-                    data.analysis.forEach(item => {
-                        const row = document.createElement('tr');
-                        const resultText = item.agglutination === null ? 'N/A' : (item.agglutination ? 'Agglutination (+)' : 'No Agglutination (-)');
-                        row.innerHTML = `
-                            <td>${item.name}</td>
-                            <td>${resultText}</td>
-                            <td>${item.confidence}%</td>
-                        `;
-                        analysisTableBody.appendChild(row);
-                    });
-                    
-                    resultsDiv.style.display = 'block';
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                console.error('An error occurred:', error);
-                alert('An unexpected error occurred. Please check the console.');
-            } finally {
-                spinner.style.display = 'none';
+        try {
+            const response = await fetch("{{ url_for('upload_file') }}", { method: 'POST', body: formData });
+            const data = await response.json();
+            if (response.ok && data.report_id) {
+                // Redirect to the new report page
+                window.location.href = `/report/${data.report_id}`;
+            } else {
+                alert('Error: ' + (data.error || 'Unknown server error'));
             }
-        });
-    </script>
-</body>
-</html>
+        } catch (error) {
+            console.error('An error occurred:', error);
+            alert('An unexpected error occurred.');
+        } finally {
+            spinner.style.display = 'none';
+            buttonText.style.display = 'inline';
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

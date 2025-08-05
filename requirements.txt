@@ -4,3 +4,4 @@ Pillow
 numpy
 opencv-python-headless
 gunicorn
+scikit-image

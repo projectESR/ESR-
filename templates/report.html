@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Report #{{ report.id }}{% endblock %}
+
+{% block content %}
+<!-- All the styles from the original index.html can be reused here -->
+<style>
+    .container {
+        width: 100%;
+        max-width: 1200px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    @media (min-width: 1024px) { .container { grid-template-columns: 400px 1fr; } }
+    .card {
+        background: var(--card-bg);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 2rem;
+    }
+    .result-main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+        padding: 2rem;
+        text-align: center;
+    }
+    #uploaded-image { max-width: 100%; width: 280px; border-radius: 12px; border: 1px solid var(--border-color); }
+    #blood-type-display h2 {
+        font-size: 7rem;
+        font-weight: 800;
+        color: #fff;
+        margin: 0;
+        line-height: 1;
+        text-shadow: 0 0 20px var(--accent-color);
+    }
+    #blood-type-display p { color: var(--text-muted); }
+    #blood-type-breakdown { margin-top: 1rem; font-style: italic; color: var(--text-muted); }
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 1.5rem;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+    th { font-weight: 600; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+    .tooltip { position: relative; display: inline-block; cursor: pointer; }
+    .tooltip .tooltip-text {
+        visibility: hidden; width: 240px; background-color: #1d3557; color: #fff; text-align: center;
+        border-radius: 6px; padding: 10px; position: absolute; z-index: 1; bottom: 125%; left: 50%;
+        margin-left: -120px; opacity: 0; transition: opacity 0.3s; font-size: 0.85rem; font-weight: 400;
+    }
+    .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
+    td .badge {
+        padding: 0.3rem 0.8rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem;
+    }
+    .badge.positive { background-color: rgba(230, 57, 70, 0.2); color: #ffc2c7; }
+    .badge.negative { background-color: rgba(168, 218, 220, 0.2); color: #e0fbfc; }
+    #print-btn {
+        background: none; border: 1px solid var(--border-color); color: var(--text-muted);
+        padding: 0.7rem 1.5rem; border-radius: 8px; cursor: pointer; transition: all 0.3s;
+        margin-top: 1rem;
+    }
+    #print-btn:hover { background-color: var(--secondary-accent); color: white; border-color: var(--secondary-accent); }
+</style>
+
+<div class="result-main card">
+    <img id="uploaded-image" src="data:image/jpeg;base64,{{ report.image_b64 }}" alt="Uploaded Test Card">
+    <div id="blood-type-display">
+        <p>Predicted Blood Type</p>
+        <h2 id="blood-type-result">{{ report.blood_type }}</h2>
+        <p id="blood-type-breakdown"></p>
+    </div>
+</div>
+
+<div class="card">
+     <div style="padding: 1.5rem;">
+        <h3 class="section-title">Analysis Breakdown</h3>
+        <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
+             <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Test Section</th><th>Result</th><th>Contrast</th><th>Dissimilarity</th>
+                            <th>Homogeneity</th><th>Energy</th><th>Correlation</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analysis-table-body">
+                        {% for item in analysis %}
+                        <tr>
+                            <td>{{ item.name }}</td>
+                            <td>
+                                <span class="badge {{ 'positive' if item.agglutination else 'negative' }}">
+                                    {{ 'Positive (+)' if item.agglutination else 'Negative (-)' }}
+                                </span>
+                            </td>
+                            <td>{{ item.features.contrast }}</td>
+                            <td>{{ item.features.dissimilarity }}</td>
+                            <td>{{ item.features.homogeneity }}</td>
+                            <td>{{ item.features.energy }}</td>
+                            <td>{{ item.features.correlation }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+             </div>
+            <div style="height: 250px;"><canvas id="confidence-chart"></canvas></div>
+        </div>
+        <button id="print-btn">Print Report</button>
+     </div>
+</div>
+
+<script>
+    // Chart.js and other dynamic elements for the report page
+    const chartCanvas = document.getElementById('confidence-chart');
+    const analysisData = JSON.parse('{{ analysis | tojson | safe }}');
+    const breakdownEl = document.getElementById('blood-type-breakdown');
+
+    function getBloodTypeBreakdown(analysis) {
+        const [antiA, antiB, antiD] = analysis.map(item => item.agglutination);
+        let breakdown = [];
+        breakdown.push(antiA ? "Reacted with Anti-A" : "No reaction to Anti-A");
+        breakdown.push(antiB ? "Reacted with Anti-B" : "No reaction to Anti-B");
+        breakdown.push(antiD ? "Positive Rh factor" : "Negative Rh factor");
+        return breakdown.join(' • ');
+    }
+    
+    breakdownEl.textContent = getBloodTypeBreakdown(analysisData);
+
+    const chartLabels = analysisData.map(item => item.name);
+    const chartData = analysisData.map(item => item.confidence);
+
+    Chart.defaults.color = '#a8dadc';
+    Chart.defaults.borderColor = 'rgba(168, 218, 220, 0.2)';
+
+    new Chart(chartCanvas, {
+        type: 'bar',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: 'Confidence',
+                data: chartData,
+                backgroundColor: 'rgba(230, 57, 70, 0.6)',
+                borderColor: 'rgba(230, 57, 70, 1)',
+                borderWidth: 1,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: { 
+                y: { grid: { display: false } }, 
+                x: { beginAtZero: true, max: 100, grid: { color: 'rgba(168, 218, 220, 0.2)' }, ticks: { color: '#a8dadc'} } 
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    document.getElementById('print-btn').addEventListener('click', () => window.print());
+</script>
+{% endblock %}

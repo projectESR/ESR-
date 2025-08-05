@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Grid Analysis Results{% endblock %}
+
+{% block content %}
+<style>
+    .card {
+        background: var(--card-bg);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 2rem;
+    }
+    h1 { color: #fff; font-weight: 800; }
+    .results-container {
+        position: relative;
+        margin-top: 2rem;
+        width: 100%;
+        border-radius: 12px;
+        overflow: hidden; /* Ensures overlays don't spill out */
+    }
+    .results-container img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+    .result-overlay {
+        position: absolute;
+        text-align: center;
+        transform: translate(-50%, -50%);
+        transition: transform 0.2s ease-in-out;
+        cursor: pointer;
+    }
+    .result-overlay:hover {
+        transform: translate(-50%, -50%) scale(1.1);
+        z-index: 10;
+    }
+    .result-overlay .blood-type {
+        font-size: 1.1rem; /* Slightly smaller for dense grids */
+        font-weight: 800;
+        color: white;
+        background-color: var(--accent-color);
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        line-height: 1;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    
+    /* New styles for the summary table */
+    .summary-table {
+        margin-top: 2rem;
+    }
+    .summary-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .summary-table th, .summary-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .summary-table th {
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+    .summary-table .badge {
+        padding: 0.3rem 0.8rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+    .badge.positive { background-color: rgba(230, 57, 70, 0.2); color: #ffc2c7; }
+    .badge.negative { background-color: rgba(168, 218, 220, 0.2); color: #e0fbfc; }
+
+</style>
+
+<div class="card">
+    <h1>Grid Results</h1>
+    <p>{{ results|length }} samples found and analyzed.</p>
+    
+    <!-- Visual Grid Display -->
+    <div class="results-container">
+        <img src="data:image/jpeg;base64,{{ original_image_b64 }}" alt="Analyzed grid image">
+        {% for result in results %}
+            <div class="result-overlay" style="left: {{ result.x_percent }}%; top: {{ result.y_percent }}%;">
+                <div class="blood-type">{{ result.blood_type }}</div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Detailed Summary Table -->
+    <div class="summary-table">
+        <h2>Analysis Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Sample #</th>
+                    <th>Classification</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>
+                        <span class="badge {{ 'positive' if result.blood_type == 'POS' else 'negative' }}">
+                            {{ 'Positive' if result.blood_type == 'POS' else 'Negative' }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
