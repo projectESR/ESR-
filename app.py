@@ -1,25 +1,14 @@
 # ==============================================================================
-# app.py - Main Flask Application
-#
-# To run this application:
-# 1. Make sure you have all requirements installed:
-#    pip install -r requirements.txt
-# 2. Make sure your trained model 'blood_type_classifier.pkl' is in the same directory.
-#    If not, the app will use the rule-based fallback.
-# 3. Create a folder named 'templates' in the same directory as this script.
-# 4. Inside 'templates', create a file named 'index.html' and paste the HTML code into it.
-# 5. Create a folder named 'uploads' for temporary image storage.
-# 6. Run this script from your terminal: python app.py
-# 7. Open your web browser and go to http://127.0.0.1:5000
+# app.py - Main Flask Application for Deep Learning Blood Grouping
 # ==============================================================================
 
-from flask import Flask, render_template, request, jsonify
-import cv2
-import numpy as np
 import os
+from flask import Flask, render_template, request, jsonify
+import numpy as np
+from PIL import Image
+import io
 import base64
-import joblib
-from skimage.feature import graycomatrix, graycoprops
+from tensorflow.keras.models import load_model
 
 # --- Flask App Initialization ---
 app = Flask(__name__)
@@ -27,197 +16,146 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # --- Configuration & Global Variables ---
-DEBUG = True
-MODEL_PATH = 'blood_type_classifier.pkl'
-ANTIBODY_TYPES = ["Anti A", "Anti B", "Anti D", "H Antigen Serum Test"]
+MODEL_PATH = 'models/final_blood_grouping_model.h5'
+# The model expects images of a specific size. Common sizes are 128x128 or 224x224.
+# **IMPORTANT**: Change this if your model was trained on a different image size.
+MODEL_IMG_SIZE = (128, 128) 
+
+# --- Load The Deep Learning Model ---
+try:
+    model = load_model(MODEL_PATH)
+    print("✅ Deep Learning model loaded successfully.")
+except Exception as e:
+    model = None
+    print(f"❌ Error loading model: {e}")
+    print("⚠️ Running in fallback mode. All predictions will be 'Undetermined'.")
+
+# --- Blood Type Logic ---
+# These are the sections of the test card
+ANTIBODY_TYPES = ["Anti A", "Anti B", "Anti D"]
+# Rules to determine blood type from test results (True = Agglutination, False = No Agglutination)
 BLOOD_TYPE_RULES = {
-    (False, False, True, True): "Bombay Rh+",
-    (False, False, False, True): "Bombay Rh-",
-    (False, False, True, False): "O+",
-    (False, False, False, False): "O-",
-    (True, False, True, False): "A+",
-    (True, False, False, False): "A-",
-    (False, True, True, False): "B+",
-    (False, True, False, False): "B-",
-    (True, True, True, False): "AB+",
-    (True, True, False, False): "AB-"
+    # (Anti-A, Anti-B, Anti-D)
+    (True, False, True): "A+",
+    (True, False, False): "A-",
+    (False, True, True): "B+",
+    (False, True, False): "B-",
+    (True, True, True): "AB+",
+    (True, True, False): "AB-",
+    (False, False, True): "O+",
+    (False, False, False): "O-",
 }
 
-# --- Load the Machine Learning Model ---
-try:
-    model = joblib.load(MODEL_PATH)
-    if DEBUG:
-        print(f"Successfully loaded pre-trained model from '{MODEL_PATH}'")
-except FileNotFoundError:
-    model = None
-    if DEBUG:
-        print(f"Warning: No pre-trained model found at '{MODEL_PATH}'. Using rule-based detection.")
-
 # ==============================================================================
-# CORE IMAGE PROCESSING AND ML LOGIC (Adapted from your code)
+# Core Functions
 # ==============================================================================
 
-def process_image_for_features(img):
-    """Preprocesses an image section for feature extraction."""
-    # Convert to HSV and get the saturation channel, which is great for contrast
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    saturation = hsv[:, :, 1]
-    
-    # Use Otsu's method to find an optimal global threshold
-    _, thresh = cv2.threshold(saturation, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)
-    
-    # Apply adaptive thresholding to handle lighting variations
-    adaptive = cv2.adaptiveThreshold(thresh, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 15, 12)
-    
-    # Use morphological closing to fill small holes and consolidate clumps
-    kernel = np.ones((5, 5), np.uint8)
-    processed = cv2.morphologyEx(adaptive, cv2.MORPH_CLOSE, kernel)
-    
-    return processed
+def preprocess_image_section(img_section_pil):
+    """
+    Prepares an image section for the deep learning model.
+    """
+    # Resize to the size the model expects
+    img_resized = img_section_pil.resize(MODEL_IMG_SIZE)
+    # Convert to a NumPy array
+    img_array = np.array(img_resized)
+    # Ensure it's 3 channels (RGB)
+    if img_array.ndim == 2: # if grayscale
+        img_array = np.stack((img_array,)*3, axis=-1)
+    # Normalize pixel values to be between 0 and 1
+    img_array = img_array / 255.0
+    # Add a "batch" dimension, e.g., (128, 128, 3) -> (1, 128, 128, 3)
+    img_batch = np.expand_dims(img_array, axis=0)
+    return img_batch
 
-def extract_features(processed_img):
-    """Extracts texture features from the processed image for the ML model."""
-    # Ensure image is 8-bit integer, as required by graycomatrix
-    processed_img = processed_img.astype(np.uint8)
+def analyze_single_section(img_section_pil):
+    """
+    Uses the loaded model to predict agglutination for a single image section.
+    """
+    if model is None:
+        return {"agglutination": None, "confidence": 0}
 
-    # Calculate GLCM
-    angles = [0, np.pi/4, np.pi/2, 3*np.pi/4]
-    glcm = graycomatrix(processed_img, distances=[1], angles=angles, symmetric=True, normed=True)
+    # Preprocess the image section
+    processed_batch = preprocess_image_section(img_section_pil)
     
-    # Calculate texture properties
-    contrast = graycoprops(glcm, 'contrast').mean()
-    energy = graycoprops(glcm, 'energy').mean()
-    homogeneity = graycoprops(glcm, 'homogeneity').mean()
-    correlation = graycoprops(glcm, 'correlation').mean()
-    dissimilarity = graycoprops(glcm, 'dissimilarity').mean()
+    # Get model prediction
+    prediction = model.predict(processed_batch)[0][0] # Get the single probability value
     
-    # Add another simple feature: percentage of white pixels (clumping)
-    white_percentage = np.sum(processed_img == 255) / processed_img.size
-    
-    features = [contrast, energy, homogeneity, correlation, dissimilarity, white_percentage]
-    if DEBUG:
-        print(f"Extracted features for prediction: {features}")
-    return np.array(features)
-
-def analyze_single_section(img_section):
-    """Analyzes a single image section and returns agglutination status and processed images."""
-    # --- Preprocessing ---
-    # Create a grayscale version for some operations
-    gray = cv2.cvtColor(img_section, cv2.COLOR_BGR2GRAY)
-    
-    # Get the processed (segmented) image for feature extraction
-    segmented = process_image_for_features(img_section)
-
-    # --- Analysis ---
-    if model is not None:
-        # ML-based prediction
-        features = extract_features(segmented)
-        # The model expects a 2D array, so we reshape
-        prediction = model.predict([features])[0]
-        # Assuming the model outputs a simple 0 (no) or 1 (yes) for agglutination.
-        agglutination = bool(prediction == 1) 
-        if DEBUG:
-            print(f"ML predicted agglutination: {agglutination}")
-    else:
-        # Rule-based fallback (from your original code, slightly adapted)
-        hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
-        hist_std = np.std(hist)
-        
-        glcm = graycomatrix(gray, distances=[1], angles=[0], symmetric=True, normed=True)
-        contrast = graycoprops(glcm, 'contrast')[0, 0]
-        energy = graycoprops(glcm, 'energy')[0, 0]
-        
-        # This thresholding logic can be fine-tuned
-        agglutination = hist_std < 580 and contrast > 200 and energy < 0.25
-        if DEBUG:
-            print(f"Rule-based agglutination: {agglutination} (std={hist_std:.2f}, contrast={contrast:.2f}, energy={energy:.2f})")
-
-    # --- Prepare images for frontend ---
-    # Encode original section
-    _, buffer_orig = cv2.imencode('.png', img_section)
-    img_orig_b64 = base64.b64encode(buffer_orig).decode('utf-8')
-
-    # Encode segmented image
-    _, buffer_seg = cv2.imencode('.png', segmented)
-    img_seg_b64 = base64.b64encode(buffer_seg).decode('utf-8')
+    # Determine agglutination based on a 0.5 threshold
+    agglutination = bool(prediction > 0.5)
+    confidence = float(prediction) if agglutination else 1 - float(prediction)
 
     return {
         "agglutination": agglutination,
-        "original_b64": img_orig_b64,
-        "segmented_b64": img_seg_b64
+        "confidence": round(confidence * 100, 2)
     }
 
 # ==============================================================================
-# FLASK ROUTES
+# Flask Routes
 # ==============================================================================
 
 @app.route('/')
 def index():
-    """Renders the main web page."""
+    """Renders the main page."""
     return render_template('index.html')
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    """Handles the image upload and analysis API endpoint."""
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    """Handles file upload and blood type prediction."""
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
-    
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
     if file:
-        # Read the image file in memory
-        filestr = file.read()
-        npimg = np.frombuffer(filestr, np.uint8)
-        img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+        try:
+            # Read image in-memory
+            image_bytes = file.read()
+            img_pil = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+            img = np.array(img_pil) # Convert to numpy array for splitting
+            h, w, _ = img.shape
 
-        if img is None:
-            return jsonify({'error': 'Could not decode image'}), 400
-
-        # --- Split the image into 4 sections ---
-        h, w = img.shape[:2]
-        # Determine stacking orientation based on aspect ratio
-        aspect_ratio = w / h
-        if aspect_ratio > 2:  # Horizontal stacking
-            num_sections = 4
+            # --- Split the image into 3 sections ---
+            # Assumes the card has 3 circles arranged horizontally
+            num_sections = 3
             split_size = w // num_sections
-            sections = [img[:, i*split_size:(i+1)*split_size] for i in range(num_sections)]
-        else:  # Vertical stacking
-            num_sections = 4
-            split_size = h // num_sections
-            sections = [img[i*split_size:(i+1)*split_size, :] for i in range(num_sections)]
+            sections_np = [img[:, i*split_size:(i+1)*split_size] for i in range(num_sections)]
+            
+            # --- Analyze each section ---
+            analysis_results = []
+            blood_results_tuple = []
+            for i, section_np in enumerate(sections_np):
+                section_pil = Image.fromarray(section_np)
+                result = analyze_single_section(section_pil)
+                
+                analysis_results.append({
+                    "name": ANTIBODY_TYPES[i],
+                    **result # merge the dictionaries
+                })
+                blood_results_tuple.append(result['agglutination'])
+            
+            # --- Determine Final Blood Type ---
+            final_blood_type = BLOOD_TYPE_RULES.get(tuple(blood_results_tuple), "Undetermined")
+            
+            # Convert image to base64 to display on the page
+            img_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        if len(sections) != 4:
-            return jsonify({'error': 'Image could not be split into 4 sections'}), 400
-
-        # --- Analyze each section ---
-        analysis_results = []
-        blood_results_tuple = []
-        for i, section in enumerate(sections):
-            result = analyze_single_section(section)
-            analysis_results.append({
-                "name": ANTIBODY_TYPES[i],
-                **result # merge the dictionaries
+            return jsonify({
+                'blood_type': final_blood_type,
+                'analysis': analysis_results,
+                'model_used': 'Deep Learning' if model else 'Model Not Loaded',
+                'image_data': img_base64
             })
-            blood_results_tuple.append(result['agglutination'])
-        
-        # --- Determine Final Blood Type ---
-        final_blood_type = BLOOD_TYPE_RULES.get(tuple(blood_results_tuple), "Undetermined")
-        
-        return jsonify({
-            'blood_type': final_blood_type,
-            'analysis': analysis_results,
-            'model_used': 'Machine Learning' if model else 'Rule-Based Fallback'
-        })
+
+        except Exception as e:
+            print(f"Error during processing: {e}")
+            return jsonify({'error': 'An error occurred during image processing.'}), 500
 
     return jsonify({'error': 'An unknown error occurred'}), 500
-
 
 # ==============================================================================
 # Main Execution
 # ==============================================================================
 if __name__ == '__main__':
     # Set debug=False for production
-    app.run(debug=True, host='0.0.0.0')
-
+    app.run(host='0.0.0.0', port=5000, debug=True)

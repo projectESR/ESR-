@@ -1,7 +1,6 @@
 Flask
-opencv-python
-numpy
+tensorflow
 Pillow
-scikit-image
-joblib
-scikit-learn
+numpy
+opencv-python-headless
+gunicorn
