@@ -19,7 +19,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 MODEL_PATH = 'models/final_blood_grouping_model.h5'
 # The model expects images of a specific size. Common sizes are 128x128 or 224x224.
 # **IMPORTANT**: Change this if your model was trained on a different image size.
-MODEL_IMG_SIZE = (128, 128) 
+MODEL_IMG_SIZE = (224, 224) 
 
 # --- Load The Deep Learning Model ---
 try:
