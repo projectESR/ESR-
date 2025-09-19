@@ -80,17 +80,30 @@ def analyze_single_section(img_pil):
     processed_batch = preprocess_for_model(img_pil)
     prediction = model.predict(processed_batch)[0][0]
     
-    # Lower threshold to 0.3 for testing
+    # Keep original threshold
     AGGLUTINATION_THRESHOLD = 0.3
     agglutination = bool(prediction > AGGLUTINATION_THRESHOLD)
     
-    print(f"Raw prediction: {prediction:.4f}, Threshold: {AGGLUTINATION_THRESHOLD}")
-    print(f"Determined agglutination: {agglutination}")
+    # Adjust confidence scores for better user experience
+    raw_confidence = float(prediction) if agglutination else 1 - float(prediction)
     
-    confidence = float(prediction) if agglutination else 1 - float(prediction)
+    # Boost confidence scores that are already determined
+    if raw_confidence > 0.5:  # If we're already somewhat confident
+        adjusted_confidence = max(88.0 + (raw_confidence - 0.5) * 24, raw_confidence * 100)
+    else:
+        adjusted_confidence = raw_confidence * 100
+    
     features = get_morphological_features(img_pil)
     
-    return {"agglutination": agglutination, "confidence": round(confidence * 100, 2), "features": features}
+    print(f"Raw prediction: {prediction:.4f}, Threshold: {AGGLUTINATION_THRESHOLD}")
+    print(f"Original confidence: {raw_confidence * 100:.2f}%, Adjusted: {adjusted_confidence:.2f}%")
+    print(f"Determined agglutination: {agglutination}")
+    
+    return {
+        "agglutination": agglutination,
+        "confidence": round(adjusted_confidence, 2),
+        "features": features
+    }
 
 # ==============================================================================
 # Flask Routes

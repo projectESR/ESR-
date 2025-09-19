@@ -1,0 +1,17 @@
+.py
+import os
+import sys
+import webbrowser
+from threading import Timer
+
+def open_browser():
+    webbrowser.open('http://127.0.0.1:5000/')
+
+if __name__ == '__main__':
+    # Set environment variables
+    os.environ['FLASK_ENV'] = 'production'
+    
+    # Import and run the Flask app
+    Timer(1.5, open_browser).start()
+    from app import app
+    app.run(port=5000)
