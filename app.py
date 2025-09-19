@@ -76,13 +76,20 @@ def analyze_single_section(img_pil):
     if model is None: 
         print("Model is None in analyze_single_section.")
         return {"agglutination": None, "confidence": 0, "features": {}}
+    
     processed_batch = preprocess_for_model(img_pil)
     prediction = model.predict(processed_batch)[0][0]
-    print(f"Model prediction: {prediction}")  # Debug: print raw model output
-    agglutination = bool(prediction > 0.5)
+    
+    # Lower threshold to 0.3 for testing
+    AGGLUTINATION_THRESHOLD = 0.3
+    agglutination = bool(prediction > AGGLUTINATION_THRESHOLD)
+    
+    print(f"Raw prediction: {prediction:.4f}, Threshold: {AGGLUTINATION_THRESHOLD}")
+    print(f"Determined agglutination: {agglutination}")
+    
     confidence = float(prediction) if agglutination else 1 - float(prediction)
     features = get_morphological_features(img_pil)
-    print(f"Agglutination: {agglutination}, Confidence: {confidence}, Features: {features}")  # Debug: print decision
+    
     return {"agglutination": agglutination, "confidence": round(confidence * 100, 2), "features": features}
 
 # ==============================================================================
@@ -187,9 +194,15 @@ def upload_file():
             agglutination_tuple = []
             for i, section_np in enumerate(sections_np):
                 section_pil = Image.fromarray(section_np)
+                # Save sections for visual inspection
+                section_pil.save(f"debug_section_{i}.jpg")
                 result = analyze_single_section(section_pil)
+                print(f"Section {i} ({ANTIBODY_TYPES[i]}): {result}")  # Debug print
                 analysis_results.append({"name": ANTIBODY_TYPES[i], **result})
                 agglutination_tuple.append(result['agglutination'])
+            
+            print(f"Final agglutination tuple: {agglutination_tuple}")  # Debug print
+            print(f"Determined blood type: {final_blood_type}")  # Debug print
             
             final_blood_type = BLOOD_TYPE_RULES.get(tuple(agglutination_tuple), "Undetermined")
             img_base64 = base64.b64encode(image_bytes).decode('utf-8')
@@ -211,9 +224,23 @@ def upload_file():
 
     return jsonify({'error': 'An unknown error occurred'}), 500
 
+def test_model():
+    print("\n=== Testing Model ===")
+    if model is None:
+        print("❌ Model not loaded!")
+        return
+    
+    # Create a simple test image
+    test_img = Image.new('RGB', (224, 224), color='red')
+    processed = preprocess_for_model(test_img)
+    prediction = model.predict(processed)[0][0]
+    print(f"Test prediction on red image: {prediction}")
+    print("=== Test Complete ===\n")
+
 # ==============================================================================
 # Main Execution
 # ==============================================================================
 if __name__ == '__main__':
     init_db()
-app.run(host='0.0.0.0', port=5000, debug=True)
+    test_model()
+    app.run(host='0.0.0.0', port=5000, debug=True)
