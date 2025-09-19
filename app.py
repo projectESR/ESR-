@@ -73,12 +73,16 @@ def get_morphological_features(img_pil):
     return props
 
 def analyze_single_section(img_pil):
-    if model is None: return {"agglutination": None, "confidence": 0, "features": {}}
+    if model is None: 
+        print("Model is None in analyze_single_section.")
+        return {"agglutination": None, "confidence": 0, "features": {}}
     processed_batch = preprocess_for_model(img_pil)
     prediction = model.predict(processed_batch)[0][0]
+    print(f"Model prediction: {prediction}")  # Debug: print raw model output
     agglutination = bool(prediction > 0.5)
     confidence = float(prediction) if agglutination else 1 - float(prediction)
     features = get_morphological_features(img_pil)
+    print(f"Agglutination: {agglutination}, Confidence: {confidence}, Features: {features}")  # Debug: print decision
     return {"agglutination": agglutination, "confidence": round(confidence * 100, 2), "features": features}
 
 # ==============================================================================
@@ -187,20 +191,6 @@ def upload_file():
                 analysis_results.append({"name": ANTIBODY_TYPES[i], **result})
                 agglutination_tuple.append(result['agglutination'])
             
-            # Find the highest confidence score
-            highest_confidence_score = max(result['confidence'] for result in analysis_results)
-            # Find the analysis entry with the highest confidence
-            highest_confidence_entry = next(result for result in analysis_results if result['confidence'] == highest_confidence_score)
-
-            # Check if the highest score is below the 88% threshold
-            if highest_confidence_score < 88.0:
-                # Add a buffer to ensure it's at least 1-2 points above the threshold
-                # The new value will be the threshold plus a small buffer, e.g., 90.0
-                # or a minimum value of 90.0 to make it visually clear.
-                new_confidence = 90.0
-                highest_confidence_entry['confidence'] = new_confidence
-                print(f"Warning: Confidence for '{highest_confidence_entry['name']}' was {highest_confidence_score}%, adjusted to {new_confidence}%.")
-
             final_blood_type = BLOOD_TYPE_RULES.get(tuple(agglutination_tuple), "Undetermined")
             img_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
@@ -226,4 +216,4 @@ def upload_file():
 # ==============================================================================
 if __name__ == '__main__':
     init_db()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+        app.run(host='0.0.0.0', port=5000, debug=True)
