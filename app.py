@@ -201,10 +201,10 @@ def upload_file():
                 analysis_results.append({"name": ANTIBODY_TYPES[i], **result})
                 agglutination_tuple.append(result['agglutination'])
             
-            print(f"Final agglutination tuple: {agglutination_tuple}")  # Debug print
-            print(f"Determined blood type: {final_blood_type}")  # Debug print
-            
             final_blood_type = BLOOD_TYPE_RULES.get(tuple(agglutination_tuple), "Undetermined")
+            print(f"Final agglutination tuple: {agglutination_tuple}")
+            print(f"Determined blood type: {final_blood_type}")
+            
             img_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
             db = get_db()
