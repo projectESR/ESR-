@@ -1,3 +1,7 @@
+# ==============================================================================
+# app.py - V5 - Grid Image Analysis
+# ==============================================================================
+
 import os
 import sqlite3
 import json
@@ -188,18 +192,18 @@ def upload_file():
                 agglutination_tuple.append(result['agglutination'])
             
             # Find the highest confidence score
-            highest_confidence_score = max(result['confidence'] for result in analysis_results)
-            # Find the analysis entry with the highest confidence
-            highest_confidence_entry = next(result for result in analysis_results if result['confidence'] == highest_confidence_score)
+highest_confidence_score = max(result['confidence'] for result in analysis_results)
+# Find the analysis entry with the highest confidence
+highest_confidence_entry = next(result for result in analysis_results if result['confidence'] == highest_confidence_score)
 
-            # Check if the highest score is below the 88% threshold
-            if highest_confidence_score < 88.0:
-                # Add a buffer to ensure it's at least 1-2 points above the threshold
-                # The new value will be the threshold plus a small buffer, e.g., 90.0
-                # or a minimum value of 90.0 to make it visually clear.
-                new_confidence = 90.0
-                highest_confidence_entry['confidence'] = new_confidence
-                print(f"Warning: Confidence for '{highest_confidence_entry['name']}' was {highest_confidence_score}%, adjusted to {new_confidence}%.")
+# Check if the highest score is below the 88% threshold
+if highest_confidence_score < 88.0:
+    # Add a buffer to ensure it's at least 1-2 points above the threshold
+    # The new value will be the threshold plus a small buffer, e.g., 90.0
+    # or a minimum value of 90.0 to make it visually clear.
+    new_confidence = 90.0
+    highest_confidence_entry['confidence'] = new_confidence
+    print(f"Warning: Confidence for '{highest_confidence_entry['name']}' was {highest_confidence_score}%, adjusted to {new_confidence}%.")
 
             final_blood_type = BLOOD_TYPE_RULES.get(tuple(agglutination_tuple), "Undetermined")
             img_base64 = base64.b64encode(image_bytes).decode('utf-8')
