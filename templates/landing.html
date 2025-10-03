@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}ESR Analysis - Advanced Medical Diagnostics{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="hero-title">Advanced ESR Analysis Platform</h1>
+            <p class="hero-subtitle">Streamline your erythrocyte sedimentation rate analysis with AI-powered accuracy and efficiency</p>
+            <div class="hero-cta">
+                <a href="{{ url_for('register') }}" class="btn btn-primary">
+                    <span class="mdi mdi-rocket"></span>
+                    Get Started
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline">
+                    <span class="mdi mdi-login"></span>
+                    Sign In
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="features">
+    <div class="container">
+        <h2 class="section-title">Why Choose Our Platform?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <span class="mdi mdi-brain feature-icon"></span>
+                <h3>AI-Powered Analysis</h3>
+                <p>Advanced machine learning algorithms ensure accurate and consistent ESR measurements</p>
+            </div>
+            <div class="feature-card">
+                <span class="mdi mdi-clock-fast feature-icon"></span>
+                <h3>Quick Results</h3>
+                <p>Get instant analysis results with detailed reports and visualizations</p>
+            </div>
+            <div class="feature-card">
+                <span class="mdi mdi-chart-box feature-icon"></span>
+                <h3>Comprehensive Reports</h3>
+                <p>Generate detailed reports with historical data tracking and analysis</p>
+            </div>
+            <div class="feature-card">
+                <span class="mdi mdi-cloud-sync feature-icon"></span>
+                <h3>Cloud Storage</h3>
+                <p>Securely store and access your results from anywhere, anytime</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="how-it-works">
+    <div class="container">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Upload Image</h3>
+                <p>Upload your ESR test image through our intuitive interface</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>AI Analysis</h3>
+                <p>Our AI model analyzes the image with high precision</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Get Results</h3>
+                <p>Receive detailed analysis with visualizations and insights</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.hero {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: 6rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path fill="%23FFFFFF" fill-opacity="0.1" d="M0 0h200v200H0z"/></svg>') repeat;
+    opacity: 0.1;
+}
+
+.hero-content {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.hero-cta {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.hero-cta .btn {
+    padding: 0.75rem 2rem;
+    font-size: 1.125rem;
+}
+
+.features {
+    padding: 6rem 0;
+    background: var(--surface);
+}
+
+.section-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 3rem;
+    color: var(--text-primary);
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.feature-card {
+    padding: 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.feature-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.how-it-works {
+    padding: 6rem 0;
+    background: var(--background);
+}
+
+.steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.step {
+    text-align: center;
+    position: relative;
+}
+
+.step-number {
+    width: 3rem;
+    height: 3rem;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 auto 1rem;
+}
+
+.step h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.125rem;
+    }
+
+    .hero-cta {
+        flex-direction: column;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .steps {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

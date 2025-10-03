@@ -1,5 +1,130 @@
 {% extends "base.html" %}
-{% block title %}Report #{{ report.id }}{% endblock %}
+
+{% block title %}ESR Analysis Report{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<style>
+    .report-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        padding: var(--space-xl) 0;
+        margin-bottom: var(--space-2xl);
+    }
+
+    .report-title {
+        font-size: var(--font-size-3xl);
+        font-weight: 700;
+        margin-bottom: var(--space-md);
+    }
+
+    .report-meta {
+        display: flex;
+        gap: var(--space-xl);
+        margin-top: var(--space-md);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .result-card {
+        text-align: center;
+        padding: var(--space-xl);
+    }
+
+    .result-value {
+        font-size: 3.5rem;
+        font-weight: 800;
+        color: var(--primary-color);
+        margin: var(--space-md) 0;
+        animation: slideUp var(--transition-normal);
+    }
+
+    .result-label {
+        font-size: var(--font-size-lg);
+        color: var(--text-secondary);
+    }
+
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--space-lg);
+        margin-top: var(--space-2xl);
+    }
+
+    .chart-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        box-shadow: var(--shadow-md);
+    }
+
+    .chart-title {
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        margin-bottom: var(--space-lg);
+    }
+
+    .image-analysis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--space-lg);
+        margin-top: var(--space-2xl);
+    }
+
+    .analysis-image {
+        width: 100%;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-md);
+        margin-top: var(--space-xl);
+    }
+
+    .stat-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        text-align: center;
+        box-shadow: var(--shadow-sm);
+        transition: transform var(--transition-normal);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-value {
+        font-size: var(--font-size-2xl);
+        font-weight: 700;
+        color: var(--primary-color);
+        margin: var(--space-sm) 0;
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+    }
+
+    @media (max-width: 768px) {
+        .report-meta {
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .result-value {
+            font-size: 2.5rem;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <!-- All the styles from the original index.html can be reused here -->

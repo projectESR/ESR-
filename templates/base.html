@@ -3,63 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AI Blood Analyzer{% endblock %}</title>
+    <title>{% block title %}ESR Analysis{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.5.95/css/materialdesignicons.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-        :root {
-            --accent-color: #e63946;
-            --secondary-accent: #457b9d;
-            --text-color: #f1faee;
-            --text-muted: #a8dadc;
-            --border-color: rgba(255, 255, 255, 0.2);
-            --card-bg: rgba(29, 53, 87, 0.55);
-        }
-        body {
-            font-family: 'Manrope', sans-serif;
-            background: linear-gradient(135deg, #1d3557, #457b9d, #a8dadc);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            color: var(--text-color);
-            margin: 0;
-            padding: 2rem;
-        }
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .main-container { max-width: 1200px; margin: auto; }
-        nav {
-            background: var(--card-bg);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        nav .logo { font-size: 1.5rem; font-weight: 800; color: #fff; }
-        nav a { color: var(--text-muted); text-decoration: none; font-weight: 600; padding: 0.5rem 1rem; border-radius: 8px; transition: all 0.3s; }
-        nav a:hover, nav a.active { color: #fff; background-color: rgba(255,255,255,0.1); }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+    
+    {% block head_extra %}{% endblock %}
 </head>
 <body>
-    <div class="main-container">
-        <nav>
-    <div class="logo">Analyzer</div>
-    <div>
-        <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' else '' }}">Single Analysis</a>
-        <a href="{{ url_for('batch_process') }}" class="{{ 'active' if request.endpoint == 'batch_process' else '' }}">Batch Analysis</a>
-        <a href="{{ url_for('history') }}" class="{{ 'active' if request.endpoint == 'history' else '' }}">History</a>
-    </div>
-</nav>
-        <main>
-            {% block content %}{% endblock %}
-        </main>
-    </div>
-</body>
-</html>
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="{{ url_for('landing') }}" class="logo">
+                <span class="mdi mdi-microscope"></span>
+                ESR Analysis
+            </a>
+            <div class="nav-links">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                        <span class="mdi mdi-view-dashboard"></span> Dashboard
+                    </a>
+                    <a href="{{ url_for('analyze') }}" class="nav-link {% if request.endpoint == 'analyze' %}active{% endif %}">
+                        <span class="mdi mdi-plus-circle"></span> New Analysis
+                    </a>
+                    <a href="{{ url_for('history') }}" class="nav-link {% if request.endpoint == 'history' %}active{% endif %}">
+                        <span class="mdi mdi-history"></span> History
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline">
+                        <span class="mdi mdi-logout"></span> Sign Out
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="nav-link {% if request.endpoint == 'login' %}active{% endif %}">Sign In</a>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content fade-in">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer mt-4">
+        <div class="container">
+            <div class="text-center text-secondary">
+                <p>&copy; {{ current_year }} ESR Analysis. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}

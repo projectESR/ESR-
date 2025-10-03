@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ESR Analysis{% endblock %}
+
+{% block content %}
+<div class="container dashboard">
+    <header class="dashboard-header">
+        <div class="welcome-section">
+            <h1>Welcome, {{ current_user.username }}</h1>
+            <p class="text-muted">Access your ESR analysis tools and reports</p>
+        </div>
+        <div class="action-buttons">
+            <a href="{{ url_for('analyze') }}" class="btn btn-primary">
+                <span class="mdi mdi-plus"></span>
+                New Analysis
+            </a>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="dashboard-card quick-stats">
+            <h2>Quick Stats</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">Total Analyses</span>
+                    <span class="stat-value">{{ stats.total_analyses }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">This Month</span>
+                    <span class="stat-value">{{ stats.monthly_analyses }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Last Analysis</span>
+                    <span class="stat-value">{{ stats.last_analysis_date }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card recent-analyses">
+            <h2>Recent Analyses</h2>
+            {% if recent_analyses %}
+            <div class="analyses-list">
+                {% for analysis in recent_analyses %}
+                <div class="analysis-item">
+                    <div class="analysis-info">
+                        <span class="analysis-id">#{{ analysis.id }}</span>
+                        <span class="analysis-date">{{ analysis.timestamp }}</span>
+                    </div>
+                    <div class="analysis-details">
+                        <span class="esr-value">ESR: {{ analysis.esr_value }}</span>
+                        <a href="{{ url_for('view_report', report_id=analysis.id) }}" class="btn btn-outline btn-sm">
+                            View Report
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <span class="mdi mdi-file-document-outline empty-icon"></span>
+                <p>No analyses yet</p>
+                <a href="{{ url_for('analyze') }}" class="btn btn-primary">Start Your First Analysis</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="dashboard-card activity-chart">
+            <h2>Analysis Activity</h2>
+            <canvas id="activityChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<style>
+.dashboard {
+    padding: 2rem 0;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.welcome-section h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.text-muted {
+    color: var(--text-secondary);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.dashboard-card {
+    background: var(--surface);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-card h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: var(--background);
+    border-radius: 0.5rem;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.analyses-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.analysis-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--background);
+    border-radius: 0.5rem;
+}
+
+.analysis-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.analysis-id {
+    font-weight: 500;
+}
+
+.analysis-date {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.analysis-details {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.esr-value {
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 0;
+    color: var(--text-secondary);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.activity-chart {
+    grid-column: 1 / -1;
+    height: 300px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .analysis-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ activity_labels | tojson }},
+            datasets: [{
+                label: 'Analyses',
+                data: {{ activity_data | tojson }},
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        display: true,
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

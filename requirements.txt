@@ -1,7 +1,13 @@
 Flask
+Flask-Login
+Flask-WTF
+email-validator
+Werkzeug
 tensorflow
 Pillow
 numpy
 opencv-python-headless
 gunicorn
 scikit-image
+python-dotenv
+itsdangerous

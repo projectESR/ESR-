@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% block title %}New ESR Analysis{% endblock %}
+
+{% block content %}
+<div class="container analysis-container">
+    <div class="analysis-grid">
+        <div class="upload-section card">
+            <div class="card-header">
+                <h2>Upload ESR Image</h2>
+                <p class="text-muted">Upload a clear image of your ESR test for analysis</p>
+            </div>
+
+            <div class="upload-options">
+                <button class="upload-option" onclick="document.getElementById('file-input').click()">
+                    <span class="mdi mdi-file-image-outline option-icon"></span>
+                    <span class="option-label">Choose File</span>
+                    <span class="option-desc">Upload from your device</span>
+                </button>
+
+                <button class="upload-option" id="webcam-btn">
+                    <span class="mdi mdi-camera option-icon"></span>
+                    <span class="option-label">Use Camera</span>
+                    <span class="option-desc">Take a photo now</span>
+                </button>
+            </div>
+
+            <div id="drop-zone" class="drop-zone">
+                <span class="mdi mdi-cloud-upload-outline drop-icon"></span>
+                <p class="drop-title">Drag and drop your image here</p>
+                <p class="drop-subtitle">or click the options above</p>
+            </div>
+
+            <input type="file" id="file-input" hidden accept="image/*">
+        </div>
+
+        <div class="preview-section card">
+            <div class="card-header">
+                <h2>Image Preview</h2>
+                <p class="text-muted">Review your image before analysis</p>
+            </div>
+
+            <div class="preview-area" id="preview-area">
+                <div class="empty-preview">
+                    <span class="mdi mdi-image-outline"></span>
+                    <p>No image selected</p>
+                </div>
+            </div>
+
+            <div class="analysis-controls">
+                <button id="analyze-btn" class="btn btn-primary btn-lg" disabled>
+                    <span class="mdi mdi-microscope"></span>
+                    Start Analysis
+                </button>
+                <button id="reset-btn" class="btn btn-outline btn-lg" disabled>
+                    <span class="mdi mdi-refresh"></span>
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="results-section" class="results-section card" style="display: none;">
+        <div class="card-header">
+            <h2>Analysis Results</h2>
+            <p class="text-muted">ESR analysis results and interpretation</p>
+        </div>
+
+        <div class="results-content">
+            <div class="result-item">
+                <span class="result-label">ESR Value</span>
+                <span class="result-value" id="esr-value">--</span>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">Analysis Confidence</span>
+                <div class="confidence-bar">
+                    <div class="confidence-progress" id="confidence-bar"></div>
+                </div>
+                <span class="confidence-value" id="confidence-value">--%</span>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">Additional Information</span>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <span class="mdi mdi-clock-outline info-icon"></span>
+                        <span class="info-label">Analysis Time</span>
+                        <span class="info-value" id="analysis-time">--:--</span>
+                    </div>
+                    <div class="info-card">
+                        <span class="mdi mdi-chart-bell-curve info-icon"></span>
+                        <span class="info-label">Method</span>
+                        <span class="info-value">AI-Enhanced</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-actions">
+            <button class="btn btn-primary" id="save-results">
+                <span class="mdi mdi-content-save"></span>
+                Save Results
+            </button>
+            <button class="btn btn-outline" id="download-report">
+                <span class="mdi mdi-file-pdf-box"></span>
+                Download Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.analysis-container {
+    padding: 2rem 0;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    margin-bottom: 1.5rem;
+}
+
+.card-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.upload-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.upload-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    background: var(--background);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.upload-option:hover {
+    border-color: var(--primary-color);
+    background: #f8fafc;
+}
+
+.option-icon {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.option-label {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.option-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.drop-zone.drag-over {
+    border-color: var(--primary-color);
+    background: #f8fafc;
+}
+
+.drop-icon {
+    font-size: 3rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.drop-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.drop-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.preview-area {
+    aspect-ratio: 16/9;
+    background: var(--background);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.empty-preview {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+.empty-preview .mdi {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.analysis-controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.125rem;
+}
+
+.results-section {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.results-section.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.results-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.result-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.result-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.result-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.confidence-bar {
+    height: 0.5rem;
+    background: var(--background);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.confidence-progress {
+    height: 100%;
+    background: var(--primary-color);
+    width: 0%;
+    transition: width 1s ease;
+}
+
+.confidence-value {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.info-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem;
+    background: var(--background);
+    border-radius: 0.75rem;
+}
+
+.info-icon {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-weight: 600;
+}
+
+.results-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+    .upload-options {
+        grid-template-columns: 1fr;
+    }
+
+    .results-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const previewArea = document.getElementById('preview-area');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const resultsSection = document.getElementById('results-section');
+
+    // Drag and drop handlers
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            handleFile(file);
+        }
+    });
+
+    // File input handler
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleFile(file);
+        }
+    });
+
+    function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewArea.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: contain;">`;
+            analyzeBtn.disabled = false;
+            resetBtn.disabled = false;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Reset button handler
+    resetBtn.addEventListener('click', () => {
+        previewArea.innerHTML = `
+            <div class="empty-preview">
+                <span class="mdi mdi-image-outline"></span>
+                <p>No image selected</p>
+            </div>
+        `;
+        fileInput.value = '';
+        analyzeBtn.disabled = true;
+        resetBtn.disabled = true;
+        resultsSection.style.display = 'none';
+    });
+
+    // Analyze button handler
+    analyzeBtn.addEventListener('click', async () => {
+        // Show loading state
+        analyzeBtn.disabled = true;
+        analyzeBtn.innerHTML = '<span class="mdi mdi-loading mdi-spin"></span> Analyzing...';
+
+        // TODO: Replace with actual API call
+        setTimeout(() => {
+            resultsSection.style.display = 'block';
+            requestAnimationFrame(() => {
+                resultsSection.classList.add('visible');
+            });
+
+            // Update results
+            document.getElementById('esr-value').textContent = '15 mm/hr';
+            document.getElementById('confidence-bar').style.width = '95%';
+            document.getElementById('confidence-value').textContent = '95%';
+            document.getElementById('analysis-time').textContent = new Date().toLocaleTimeString();
+
+            // Reset button state
+            analyzeBtn.innerHTML = '<span class="mdi mdi-microscope"></span> Start Analysis';
+            analyzeBtn.disabled = false;
+        }, 2000);
+    });
+});
+</script>
+{% endblock %}
