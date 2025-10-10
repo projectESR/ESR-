@@ -5,26 +5,65 @@ import secrets
 
 class User(UserMixin):
     def __init__(self, id, username, email, password_hash, created_at, last_login, is_active):
-        self.id = id
-        self.username = username
-        self.email = email
-        self.password_hash = password_hash
-        self.created_at = created_at
-        self.last_login = last_login
-        self.is_active = is_active
+        self._id = id
+        self._username = username
+        self._email = email
+        self._password_hash = password_hash
+        self._created_at = created_at
+        self._last_login = last_login
+        self._is_active = is_active
+
+    @property
+    def id(self):
+        return self._id
+    
+    @property
+    def username(self):
+        return self._username
+    
+    @property
+    def email(self):
+        return self._email
+    
+    @property
+    def password_hash(self):
+        return self._password_hash
+    
+    @property
+    def created_at(self):
+        return self._created_at
+    
+    @property
+    def last_login(self):
+        return self._last_login
+    
+    @property
+    def is_active(self):
+        return self._is_active
+    
+    @is_active.setter
+    def is_active(self, value):
+        self._is_active = value
 
     @staticmethod
     def create(db, username, email, password):
-        cursor = db.cursor()
-        now = datetime.utcnow().isoformat()
-        hashed_password = generate_password_hash(password)
-        
-        cursor.execute(
-            'INSERT INTO users (username, email, password_hash, created_at, is_active) VALUES (?, ?, ?, ?, ?)',
-            (username, email, hashed_password, now, True)
-        )
-        db.commit()
-        return cursor.lastrowid
+        try:
+            cursor = db.cursor()
+            now = datetime.utcnow().isoformat()
+            hashed_password = generate_password_hash(password)
+            
+            cursor.execute('''
+                INSERT INTO users 
+                (username, email, password_hash, created_at, last_login, is_active) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (username, email, hashed_password, now, now, 1))
+            
+            db.commit()
+            return cursor.lastrowid
+        except Exception as e:
+            db.rollback()
+            print(f"Error creating user: {e}")
+            raise
 
     @staticmethod
     def get_by_id(db, user_id):

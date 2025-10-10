@@ -1,62 +1,82 @@
 {% extends "base.html" %}
 
-{% block title %}Register - ESR Analysis{% endblock %}
+{% block title %}Register - ESR{% endblock %}
+
+{% block head_extra %}
+<style>
+    .register-section {
+        min-height: calc(100vh - 5rem);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 5rem;
+    }
+
+    .register-card {
+        background: var(--card-bg);
+        border-radius: 1rem;
+        padding: 2rem;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 4px 6px var(--card-shadow);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        background: var(--input-bg);
+        color: var(--text-primary);
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px var(--primary-light);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="card w-full max-w-md">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-900">Create your account</h2>
-                <p class="mt-2 text-sm text-gray-600">
-                    Already have an account?
-                    <a href="{{ url_for('login') }}" class="font-medium text-primary-color hover:text-primary-dark">
-                        Sign in
-                    </a>
-                </p>
+<section class="register-section">
+    <div class="register-card">
+        <h2 class="text-2xl font-bold mb-6 text-center">Create Account</h2>
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" name="name" class="form-input" required>
             </div>
-
-            {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-error">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <form class="space-y-6" action="{{ url_for('register') }}" method="POST">
-                <div class="form-group">
-                    <label for="username" class="form-label">Username</label>
-                    <input id="username" name="username" type="text" required 
-                           class="form-input" placeholder="Choose a username">
-                </div>
-
-                <div class="form-group">
-                    <label for="email" class="form-label">Email address</label>
-                    <input id="email" name="email" type="email" autocomplete="email" required 
-                           class="form-input" placeholder="Enter your email">
-                </div>
-
-                <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <input id="password" name="password" type="password" autocomplete="new-password" 
-                           required class="form-input" placeholder="Create a strong password"
-                           minlength="8">
-                    <p class="mt-1 text-sm text-gray-500">
-                        Password must be at least 8 characters long
-                    </p>
-                </div>
-
-                <div>
-                    <button type="submit" class="btn btn-primary w-full">
-                        <span class="mdi mdi-account-plus"></span>
-                        Create account
-                    </button>
-                </div>
-            </form>
-        </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" name="confirm_password" class="form-input" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-full">
+                Register
+            </button>
+        </form>
+        <p class="text-center mt-4">
+            Already have an account? 
+            <a href="{{ url_for('login') }}" class="text-primary hover:text-primary-light">Login</a>
+        </p>
     </div>
-</div>
+</section>
 {% endblock %}

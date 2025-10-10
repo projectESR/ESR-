@@ -1,15 +1,39 @@
 -- schema.sql
--- Updated schema with user authentication and relationships
+-- Drop existing tables if they exist
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS reports;
 
 -- Users table for authentication
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     created_at TEXT NOT NULL,
     last_login TEXT,
-    is_active BOOLEAN NOT NULL DEFAULT 1
+    is_active INTEGER NOT NULL DEFAULT 1
+);
+
+-- Sessions table for user sessions
+CREATE TABLE sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    session_token TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);
+
+-- Reports table for ESR analysis results
+CREATE TABLE reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    timestamp TEXT NOT NULL,
+    blood_type TEXT,
+    image_b64 TEXT,
+    analysis_json TEXT,
+    FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
 -- User sessions table
