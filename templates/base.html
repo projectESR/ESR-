@@ -146,18 +146,15 @@
             </a>
             <div class="nav-links">
                 {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
-                        <span class="mdi mdi-view-dashboard"></span> Dashboard
-                    </a>
-                    <a href="{{ url_for('analyze') }}" class="nav-link {% if request.endpoint == 'analyze' %}active{% endif %}">
-                        <span class="mdi mdi-plus"></span> New
-                    </a>
-                    <a href="{{ url_for('history') }}" class="nav-link {% if request.endpoint == 'history' %}active{% endif %}">
-                        <span class="mdi mdi-history"></span> History
-                    </a>
-                    <a href="{{ url_for('logout') }}" class="btn btn-outline">
-                        <span class="mdi mdi-logout"></span> Sign Out
-                    </a>
+                        <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                            <span class="mdi mdi-view-dashboard"></span> Dashboard
+                        </a>
+                        <a href="{{ url_for('history') }}" class="nav-link {% if request.endpoint == 'history' %}active{% endif %}">
+                            <span class="mdi mdi-history"></span> History
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline">
+                            <span class="mdi mdi-logout"></span> Sign Out
+                        </a>
                 {% else %}
                     <a href="{{ url_for('login') }}" class="nav-link {% if request.endpoint == 'login' %}active{% endif %}">Sign In</a>
                     <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
