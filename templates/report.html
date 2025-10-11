@@ -292,7 +292,7 @@
 
 <script>
     // Parse analysis data
-    const analysisData = {{ analysis | tojson | safe }};
+    const analysisData = JSON.parse('{{ analysis | tojson | safe }}');
     
     // Generate blood type breakdown text
     function getBloodTypeBreakdown(analysis) {
