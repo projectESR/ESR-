@@ -1,228 +1,248 @@
 {% extends "base.html" %}
 
-{% block title %}ESR Analysis Report{% endblock %}
+{% block title %}Analysis Report - ESR{% endblock %}
 
 {% block head_extra %}
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
-    .report-header {
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-        color: white;
-        padding: var(--space-xl) 0;
-        margin-bottom: var(--space-2xl);
+    .report-container {
+        padding: 2rem 0;
     }
 
-    .report-title {
-        font-size: var(--font-size-3xl);
-        font-weight: 700;
-        margin-bottom: var(--space-md);
-    }
-
-    .report-meta {
-        display: flex;
-        gap: var(--space-xl);
-        margin-top: var(--space-md);
-    }
-
-    .meta-item {
-        display: flex;
-        align-items: center;
-        gap: var(--space-sm);
+    .report-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
     }
 
     .result-card {
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        padding: 2.5rem;
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow-md);
         text-align: center;
-        padding: var(--space-xl);
     }
 
-    .result-value {
-        font-size: 3.5rem;
-        font-weight: 800;
-        color: var(--primary-color);
-        margin: var(--space-md) 0;
-        animation: slideUp var(--transition-normal);
+    .test-image {
+        width: 100%;
+        max-width: 400px;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        margin-bottom: 1.5rem;
     }
 
     .result-label {
         font-size: var(--font-size-lg);
         color: var(--text-secondary);
-    }
-
-    .analysis-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: var(--space-lg);
-        margin-top: var(--space-2xl);
-    }
-
-    .chart-card {
-        background: var(--surface);
-        border-radius: var(--radius-lg);
-        padding: var(--space-xl);
-        box-shadow: var(--shadow-md);
-    }
-
-    .chart-title {
-        font-size: var(--font-size-xl);
         font-weight: 600;
-        margin-bottom: var(--space-lg);
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
-    .image-analysis {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: var(--space-lg);
-        margin-top: var(--space-2xl);
+    .blood-type-result {
+        font-size: 6rem;
+        font-weight: 800;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 1rem;
+        text-shadow: 0 4px 8px rgba(255, 0, 50, 0.2);
     }
 
-    .analysis-image {
-        width: 100%;
+    .blood-type-breakdown {
+        font-size: var(--font-size-base);
+        color: var(--text-secondary);
+        font-style: italic;
+        padding: 1rem;
+        background: var(--accent-pink);
         border-radius: var(--radius-lg);
+        margin-top: 1rem;
+    }
+
+    .analysis-card {
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        padding: 2.5rem;
+        border: 1px solid var(--border-light);
         box-shadow: var(--shadow-md);
     }
 
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: var(--space-md);
-        margin-top: var(--space-xl);
-    }
-
-    .stat-card {
-        background: var(--surface);
-        border-radius: var(--radius-lg);
-        padding: var(--space-lg);
-        text-align: center;
-        box-shadow: var(--shadow-sm);
-        transition: transform var(--transition-normal);
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .stat-value {
+    .card-title {
         font-size: var(--font-size-2xl);
         font-weight: 700;
-        color: var(--primary-color);
-        margin: var(--space-sm) 0;
+        color: var(--text-primary);
+        margin-bottom: 2rem;
     }
 
-    .stat-label {
+    .analysis-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2rem;
+    }
+
+    .analysis-table th {
+        background: var(--background);
+        padding: 1rem;
+        text-align: left;
+        font-size: var(--font-size-sm);
+        font-weight: 600;
         color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .analysis-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-light);
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .analysis-table tr:hover {
+        background: var(--background);
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-full);
+        font-weight: 700;
         font-size: var(--font-size-sm);
     }
 
-    @media (max-width: 768px) {
-        .report-meta {
-            flex-direction: column;
-            gap: var(--space-md);
-        }
+    .badge.positive {
+        background: #FEE2E2;
+        color: #DC2626;
+        border: 2px solid #DC2626;
+    }
 
-        .result-value {
-            font-size: 2.5rem;
+    .badge.negative {
+        background: #DBEAFE;
+        color: #2563EB;
+        border: 2px solid #2563EB;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 350px;
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: var(--background);
+        border-radius: var(--radius-lg);
+    }
+
+    .chart-legend {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    @media (max-width: 1024px) {
+        .report-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media print {
+        .action-buttons {
+            display: none;
+        }
+        nav {
+            display: none;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- All the styles from the original index.html can be reused here -->
-<style>
-    .container {
-        width: 100%;
-        max-width: 1200px;
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-    @media (min-width: 1024px) { .container { grid-template-columns: 400px 1fr; } }
-    .card {
-        background: var(--card-bg);
-        backdrop-filter: blur(25px);
-        -webkit-backdrop-filter: blur(25px);
-        border-radius: 16px;
-        border: 1px solid var(--border-color);
-        padding: 2rem;
-    }
-    .result-main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2rem;
-        padding: 2rem;
-        text-align: center;
-    }
-    #uploaded-image { max-width: 100%; width: 280px; border-radius: 12px; border: 1px solid var(--border-color); }
-    #blood-type-display h2 {
-        font-size: 7rem;
-        font-weight: 800;
-        color: #fff;
-        margin: 0;
-        line-height: 1;
-        text-shadow: 0 0 20px var(--accent-color);
-    }
-    #blood-type-display p { color: var(--text-muted); }
-    #blood-type-breakdown { margin-top: 1rem; font-style: italic; color: var(--text-muted); }
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #fff;
-        margin-bottom: 1.5rem;
-    }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-    th { font-weight: 600; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
-    .tooltip { position: relative; display: inline-block; cursor: pointer; }
-    .tooltip .tooltip-text {
-        visibility: hidden; width: 240px; background-color: #1d3557; color: #fff; text-align: center;
-        border-radius: 6px; padding: 10px; position: absolute; z-index: 1; bottom: 125%; left: 50%;
-        margin-left: -120px; opacity: 0; transition: opacity 0.3s; font-size: 0.85rem; font-weight: 400;
-    }
-    .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
-    td .badge {
-        padding: 0.3rem 0.8rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem;
-    }
-    .badge.positive { background-color: rgba(230, 57, 70, 0.2); color: #ffc2c7; }
-    .badge.negative { background-color: rgba(168, 218, 220, 0.2); color: #e0fbfc; }
-    #print-btn {
-        background: none; border: 1px solid var(--border-color); color: var(--text-muted);
-        padding: 0.7rem 1.5rem; border-radius: 8px; cursor: pointer; transition: all 0.3s;
-        margin-top: 1rem;
-    }
-    #print-btn:hover { background-color: var(--secondary-accent); color: white; border-color: var(--secondary-accent); }
-</style>
+<div class="report-container">
+    <div class="container">
+        <!-- Result Display -->
+        <div class="report-grid">
+            <!-- Image Card -->
+            <div class="result-card animate-fade-in">
+                <img src="data:image/jpeg;base64,{{ report.image_b64 }}" alt="Test Card" class="test-image">
+            </div>
 
-<div class="result-main card">
-    <img id="uploaded-image" src="data:image/jpeg;base64,{{ report.image_b64 }}" alt="Uploaded Test Card">
-    <div id="blood-type-display">
-        <p>Predicted Blood Type</p>
-        <h2 id="blood-type-result">{{ report.blood_type }}</h2>
-        <p id="blood-type-breakdown"></p>
-    </div>
-</div>
+            <!-- Blood Type Result Card -->
+            <div class="result-card animate-fade-in" style="animation-delay: 0.1s;">
+                <div class="result-label">Predicted Blood Type</div>
+                <div class="blood-type-result" id="blood-type-display">{{ report.blood_type }}</div>
+                <div class="blood-type-breakdown" id="blood-type-breakdown"></div>
+            </div>
+        </div>
 
-<div class="card">
-     <div style="padding: 1.5rem;">
-        <h3 class="section-title">Analysis Breakdown</h3>
-        <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
-             <div style="overflow-x: auto;">
-                <table>
+        <!-- Analysis Details -->
+        <div class="analysis-card animate-fade-in full-width" style="animation-delay: 0.2s;">
+            <h2 class="card-title">Detailed Analysis</h2>
+
+            <!-- Analysis Table -->
+            <div style="overflow-x: auto;">
+                <table class="analysis-table">
                     <thead>
                         <tr>
-                            <th>Test Section</th><th>Result</th><th>Contrast</th><th>Dissimilarity</th>
-                            <th>Homogeneity</th><th>Energy</th><th>Correlation</th>
+                            <th>Test Section</th>
+                            <th>Result</th>
+                            <th>Confidence</th>
+                            <th>Contrast</th>
+                            <th>Dissimilarity</th>
+                            <th>Homogeneity</th>
+                            <th>Energy</th>
+                            <th>Correlation</th>
                         </tr>
                     </thead>
-                    <tbody id="analysis-table-body">
+                    <tbody>
                         {% for item in analysis %}
                         <tr>
-                            <td>{{ item.name }}</td>
+                            <td><strong>{{ item.name }}</strong></td>
                             <td>
                                 <span class="badge {{ 'positive' if item.agglutination else 'negative' }}">
-                                    {{ 'Positive (+)' if item.agglutination else 'Negative (-)' }}
+                                    {% if item.agglutination %}
+                                        <span class="mdi mdi-plus-circle"></span>
+                                        Positive
+                                    {% else %}
+                                        <span class="mdi mdi-minus-circle"></span>
+                                        Negative
+                                    {% endif %}
                                 </span>
                             </td>
+                            <td><strong>{{ item.confidence }}%</strong></td>
                             <td>{{ item.features.contrast }}</td>
                             <td>{{ item.features.dissimilarity }}</td>
                             <td>{{ item.features.homogeneity }}</td>
@@ -232,61 +252,206 @@
                         {% endfor %}
                     </tbody>
                 </table>
-             </div>
-            <div style="height: 250px;"><canvas id="confidence-chart"></canvas></div>
+            </div>
+
+            <!-- Confidence Chart with Dual Y-Axes -->
+            <div class="chart-container">
+                <canvas id="confidence-chart"></canvas>
+            </div>
+
+            <!-- Chart Legend -->
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(220, 38, 38, 0.8);"></div>
+                    <span>Positive Results (Left Axis: 0% → 100%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(37, 99, 235, 0.8);"></div>
+                    <span>Negative Results (Right Axis: 100% → 0%)</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="window.print()">
+                    <span class="mdi mdi-printer"></span>
+                    Print Report
+                </button>
+                <a href="{{ url_for('history') }}" class="btn btn-outline">
+                    <span class="mdi mdi-history"></span>
+                    View All Reports
+                </a>
+                <a href="{{ url_for('analyze') }}" class="btn btn-ghost">
+                    <span class="mdi mdi-plus-circle"></span>
+                    New Analysis
+                </a>
+            </div>
         </div>
-        <button id="print-btn">Print Report</button>
-     </div>
+    </div>
 </div>
 
 <script>
-    // Chart.js and other dynamic elements for the report page
-    const chartCanvas = document.getElementById('confidence-chart');
-    const analysisData = JSON.parse('{{ analysis | tojson | safe }}');
-    const breakdownEl = document.getElementById('blood-type-breakdown');
-
+    // Parse analysis data
+    const analysisData = {{ analysis | tojson | safe }};
+    
+    // Generate blood type breakdown text
     function getBloodTypeBreakdown(analysis) {
-        const [antiA, antiB, antiD] = analysis.map(item => item.agglutination);
-        let breakdown = [];
-        breakdown.push(antiA ? "Reacted with Anti-A" : "No reaction to Anti-A");
-        breakdown.push(antiB ? "Reacted with Anti-B" : "No reaction to Anti-B");
-        breakdown.push(antiD ? "Positive Rh factor" : "Negative Rh factor");
-        return breakdown.join(' • ');
+        const reactions = [];
+        analysis.forEach(item => {
+            if (item.agglutination) {
+                reactions.push(`✓ Reacted with ${item.name}`);
+            } else {
+                reactions.push(`✗ No reaction to ${item.name}`);
+            }
+        });
+        return reactions.join(' • ');
     }
     
-    breakdownEl.textContent = getBloodTypeBreakdown(analysisData);
+    // Update breakdown text
+    document.getElementById('blood-type-breakdown').textContent = getBloodTypeBreakdown(analysisData);
 
+    // FIXED: Separate data for positive and negative results
     const chartLabels = analysisData.map(item => item.name);
-    const chartData = analysisData.map(item => item.confidence);
+    
+    // Create separate arrays for positive and negative confidence values
+    const positiveData = analysisData.map(item => item.agglutination ? item.confidence : null);
+    const negativeData = analysisData.map(item => !item.agglutination ? item.confidence : null);
 
-    Chart.defaults.color = '#a8dadc';
-    Chart.defaults.borderColor = 'rgba(168, 218, 220, 0.2)';
-
-    new Chart(chartCanvas, {
+    // Create chart with DUAL Y-AXES and SEPARATE DATASETS
+    const ctx = document.getElementById('confidence-chart').getContext('2d');
+    new Chart(ctx, {
         type: 'bar',
         data: {
             labels: chartLabels,
-            datasets: [{
-                label: 'Confidence',
-                data: chartData,
-                backgroundColor: 'rgba(230, 57, 70, 0.6)',
-                borderColor: 'rgba(230, 57, 70, 1)',
-                borderWidth: 1,
-                borderRadius: 8
-            }]
+            datasets: [
+                {
+                    label: 'Positive Confidence',
+                    data: positiveData,
+                    backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                    borderColor: 'rgba(220, 38, 38, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    yAxisID: 'y-left' // Use left axis
+                },
+                {
+                    label: 'Negative Confidence',
+                    data: negativeData,
+                    backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    yAxisID: 'y-right' // Use right axis
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            indexAxis: 'y',
-            scales: { 
-                y: { grid: { display: false } }, 
-                x: { beginAtZero: true, max: 100, grid: { color: 'rgba(168, 218, 220, 0.2)' }, ticks: { color: '#a8dadc'} } 
+            interaction: {
+                mode: 'index',
+                intersect: false
             },
-            plugins: { legend: { display: false } }
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const index = context.dataIndex;
+                            const item = analysisData[index];
+                            const result = item.agglutination ? 'Positive' : 'Negative';
+                            const axis = item.agglutination ? 'Confidence in Positive' : 'Confidence in Negative';
+                            return `${result} - ${item.confidence}% ${axis}`;
+                        }
+                    },
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    }
+                }
+            },
+            scales: {
+                // LEFT Y-AXIS for POSITIVE results (0% → 100%)
+                'y-left': {
+                    type: 'linear',
+                    position: 'left',
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        },
+                        font: {
+                            size: 12,
+                            weight: 600
+                        },
+                        color: '#DC2626',
+                        stepSize: 10
+                    },
+                    grid: {
+                        color: 'rgba(220, 38, 38, 0.1)',
+                        drawOnChartArea: true
+                    },
+                    title: {
+                        display: true,
+                        text: 'Positive Confidence →',
+                        color: '#DC2626',
+                        font: {
+                            size: 13,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                // RIGHT Y-AXIS for NEGATIVE results (100% → 0% inverted)
+                'y-right': {
+                    type: 'linear',
+                    position: 'right',
+                    reverse: true, // THIS INVERTS THE AXIS!
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        },
+                        font: {
+                            size: 12,
+                            weight: 600
+                        },
+                        color: '#2563EB',
+                        stepSize: 10
+                    },
+                    grid: {
+                        drawOnChartArea: false // Don't overlap grids
+                    },
+                    title: {
+                        display: true,
+                        text: '← Negative Confidence',
+                        color: '#2563EB',
+                        font: {
+                            size: 13,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 13,
+                            weight: 600
+                        }
+                    }
+                }
+            }
         }
     });
-
-    document.getElementById('print-btn').addEventListener('click', () => window.print());
 </script>
 {% endblock %}
