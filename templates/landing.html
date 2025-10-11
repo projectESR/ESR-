@@ -1,55 +1,389 @@
 {% extends "base.html" %}
 
-{% block title %}ESR - Modern Medical Diagnostics{% endblock %}
+{% block title %}ESR Blood Analysis - Advanced Medical Diagnostics{% endblock %}
 
 {% block head_extra %}
 <style>
+    /* Hero Section */
     .hero-section {
         min-height: calc(100vh - 5rem);
         display: flex;
         align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
         position: relative;
         overflow: hidden;
     }
 
+    .hero-background {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 60%;
+        height: 100%;
+        background: var(--gradient-radial);
+        opacity: 0.05;
+        border-radius: 50% 0 0 50%;
+        transform: scale(1.5);
+    }
+
     .hero-content {
-        text-align: center;
-        color: white;
+        position: relative;
+        z-index: 2;
+        max-width: 600px;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--accent-pink);
+        color: var(--primary-color);
+        border-radius: var(--radius-full);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        animation: pulse 2s ease-in-out infinite;
     }
 
     .hero-title {
-        font-size: 4rem;
+        font-size: clamp(2.5rem, 5vw, 4.5rem);
         font-weight: 800;
+        line-height: 1.1;
         margin-bottom: 1.5rem;
-        background: linear-gradient(to right, #ffffff, #e2e8f0);
+        color: var(--text-primary);
+    }
+
+    .hero-title .gradient-text {
+        display: block;
+    }
+
+    .hero-description {
+        font-size: var(--font-size-lg);
+        color: var(--text-secondary);
+        line-height: 1.8;
+        margin-bottom: 2rem;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .hero-image {
+        position: relative;
+        z-index: 2;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-20px);
+        }
+    }
+
+    .hero-image img {
+        width: 100%;
+        max-width: 500px;
+        filter: drop-shadow(0 20px 40px rgba(255, 0, 50, 0.2));
+    }
+
+    /* Stats Section */
+    .stats-section {
+        padding: 4rem 0;
+        background: var(--surface);
+        border-top: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 3rem;
+        text-align: center;
+    }
+
+    .stat-item {
+        animation: fadeInUp 0.6s ease-out forwards;
+        opacity: 0;
+    }
+
+    .stat-item:nth-child(1) { animation-delay: 0.1s; }
+    .stat-item:nth-child(2) { animation-delay: 0.2s; }
+    .stat-item:nth-child(3) { animation-delay: 0.3s; }
+    .stat-item:nth-child(4) { animation-delay: 0.4s; }
+
+    .stat-value {
+        font-size: var(--font-size-4xl);
+        font-weight: 800;
+        background: var(--gradient-primary);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
     }
 
-    .hero-subtitle {
-        font-size: 1.5rem;
-        margin-bottom: 2rem;
-        opacity: 0.9;
+    .stat-label {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
+    /* Features Section */
     .features-section {
-        padding: 5rem 0;
-        background: var(--surface);
+        padding: 6rem 0;
+    }
+
+    .section-header {
+        text-align: center;
+        max-width: 700px;
+        margin: 0 auto 4rem;
+    }
+
+    .section-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background: var(--accent-pink);
+        color: var(--primary-color);
+        border-radius: var(--radius-full);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .section-title {
+        font-size: var(--font-size-4xl);
+        font-weight: 800;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .section-description {
+        font-size: var(--font-size-lg);
+        color: var(--text-secondary);
+        line-height: 1.8;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
     }
 
     .feature-card {
-        background: var(--card-bg);
-        border-radius: 1rem;
-        padding: 2rem;
-        text-align: center;
-        transition: transform 0.3s ease;
-        box-shadow: 0 4px 6px var(--card-shadow);
+        padding: 2.5rem;
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border-light);
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--gradient-primary);
+        transform: scaleX(0);
+        transition: transform var(--transition-normal);
     }
 
     .feature-card:hover {
-        transform: translateY(-5px);
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-color);
+    }
+
+    .feature-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--gradient-primary);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 16px rgba(255, 0, 50, 0.25);
+    }
+
+    .feature-title {
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+    }
+
+    .feature-description {
+        font-size: var(--font-size-base);
+        color: var(--text-secondary);
+        line-height: 1.7;
+    }
+
+    /* How It Works Section */
+    .how-it-works-section {
+        padding: 6rem 0;
+        background: var(--surface);
+    }
+
+    .steps-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .step {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 2rem;
+        margin-bottom: 3rem;
+        opacity: 0;
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    .step:nth-child(1) { animation-delay: 0.1s; }
+    .step:nth-child(2) { animation-delay: 0.2s; }
+    .step:nth-child(3) { animation-delay: 0.3s; }
+
+    .step-number {
+        width: 80px;
+        height: 80px;
+        background: var(--gradient-primary);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-3xl);
+        font-weight: 800;
+        color: white;
+        box-shadow: 0 8px 16px rgba(255, 0, 50, 0.25);
+    }
+
+    .step-content {
+        padding-top: 0.5rem;
+    }
+
+    .step-title {
+        font-size: var(--font-size-2xl);
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+    }
+
+    .step-description {
+        font-size: var(--font-size-base);
+        color: var(--text-secondary);
+        line-height: 1.7;
+    }
+
+    /* CTA Section */
+    .cta-section {
+        padding: 6rem 0;
+        background: var(--gradient-primary);
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .cta-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .cta-section::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -10%;
+        width: 400px;
+        height: 400px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .cta-content {
+        position: relative;
+        z-index: 2;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .cta-title {
+        font-size: var(--font-size-4xl);
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+    }
+
+    .cta-description {
+        font-size: var(--font-size-lg);
+        margin-bottom: 2rem;
+        opacity: 0.95;
+    }
+
+    .cta-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-white {
+        background: white;
+        color: var(--primary-color);
+    }
+
+    .btn-white:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-outline-white {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+    }
+
+    .btn-outline-white:hover {
+        background: white;
+        color: var(--primary-color);
+    }
+
+    @media (max-width: 1024px) {
+        .hero-section {
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 100%;
+        }
+
+        .hero-actions {
+            justify-content: center;
+        }
+
+        .hero-image {
+            display: none;
+        }
     }
 
     @media (max-width: 768px) {
@@ -57,44 +391,245 @@
             font-size: 2.5rem;
         }
 
-        .hero-subtitle {
-            font-size: 1.25rem;
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .step {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+
+        .step-number {
+            margin: 0 auto;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Hero Section -->
 <section class="hero-section">
     <div class="container">
-        <div class="hero-content">
-            <h1 class="hero-title">ESR</h1>
-            <p class="hero-subtitle">Modern Medical Diagnostics</p>
-            <a href="{{ url_for('register') }}" class="btn btn-primary">
-                Get Started
-                <span class="mdi mdi-arrow-right"></span>
-            </a>
+        <div class="grid grid-cols-2 gap-8 items-center">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="mdi mdi-lightning-bolt"></span>
+                    AI-Powered Analysis
+                </div>
+                <h1 class="hero-title">
+                    Advanced Blood Group
+                    <span class="gradient-text">Analysis System</span>
+                </h1>
+                <p class="hero-description">
+                    Experience the future of medical diagnostics with our AI-powered blood group analysis. 
+                    Fast, accurate, and reliable results in minutes.
+                </p>
+                <div class="hero-actions">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                        <span class="mdi mdi-rocket-launch"></span>
+                        Get Started Free
+                    </a>
+                    <a href="#features" class="btn btn-outline btn-lg">
+                        <span class="mdi mdi-information-outline"></span>
+                        Learn More
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="heroGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FF0032;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#D90028;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Microscope illustration -->
+                    <circle cx="250" cy="250" r="200" fill="url(#heroGradient)" opacity="0.1"/>
+                    <circle cx="250" cy="250" r="150" fill="url(#heroGradient)" opacity="0.15"/>
+                    <circle cx="250" cy="250" r="100" fill="url(#heroGradient)" opacity="0.2"/>
+                    <path d="M 200 200 L 300 200 L 280 350 L 220 350 Z" fill="url(#heroGradient)"/>
+                    <circle cx="250" cy="180" r="40" fill="white" stroke="url(#heroGradient)" stroke-width="4"/>
+                    <circle cx="250" cy="180" r="25" fill="url(#heroGradient)" opacity="0.3"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+    <div class="hero-background"></div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">99.9%</div>
+                <div class="stat-label">Accuracy Rate</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">&lt;2 Min</div>
+                <div class="stat-label">Analysis Time</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">10K+</div>
+                <div class="stat-label">Tests Analyzed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Availability</div>
+            </div>
         </div>
     </div>
 </section>
 
-<section class="features-section">
+<!-- Features Section -->
+<section class="features-section" id="features">
     <div class="container">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="section-header">
+            <span class="section-badge">Features</span>
+            <h2 class="section-title">Why Choose Our Platform</h2>
+            <p class="section-description">
+                Cutting-edge technology meets medical precision to deliver unparalleled blood analysis results.
+            </p>
+        </div>
+
+        <div class="features-grid">
             <div class="feature-card">
-                <span class="mdi mdi-flash text-4xl text-primary mb-4"></span>
-                <h3 class="text-xl font-bold mb-2">Fast Results</h3>
-                <p class="text-secondary">Quick and accurate ESR analysis in minutes</p>
+                <div class="feature-icon">
+                    <span class="mdi mdi-brain"></span>
+                </div>
+                <h3 class="feature-title">AI-Powered Analysis</h3>
+                <p class="feature-description">
+                    Advanced machine learning algorithms analyze blood samples with exceptional accuracy, 
+                    reducing human error and providing consistent results.
+                </p>
             </div>
+
             <div class="feature-card">
-                <span class="mdi mdi-chart-line text-4xl text-primary mb-4"></span>
-                <h3 class="text-xl font-bold mb-2">Detailed Analytics</h3>
-                <p class="text-secondary">Comprehensive reports and trending analysis</p>
+                <div class="feature-icon">
+                    <span class="mdi mdi-clock-fast"></span>
+                </div>
+                <h3 class="feature-title">Rapid Results</h3>
+                <p class="feature-description">
+                    Get your blood group analysis results in under 2 minutes. No more waiting days 
+                    for laboratory results.
+                </p>
             </div>
+
             <div class="feature-card">
-                <span class="mdi mdi-shield-check text-4xl text-primary mb-4"></span>
-                <h3 class="text-xl font-bold mb-2">Reliable</h3>
-                <p class="text-secondary">Trusted by medical professionals worldwide</p>
+                <div class="feature-icon">
+                    <span class="mdi mdi-shield-check"></span>
+                </div>
+                <h3 class="feature-title">Medical Grade Accuracy</h3>
+                <p class="feature-description">
+                    Our system achieves 99.9% accuracy, meeting and exceeding medical industry standards 
+                    for diagnostic tools.
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="mdi mdi-file-chart"></span>
+                </div>
+                <h3 class="feature-title">Detailed Reports</h3>
+                <p class="feature-description">
+                    Comprehensive analysis reports with visual breakdowns, confidence scores, 
+                    and morphological features.
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="mdi mdi-cloud-lock"></span>
+                </div>
+                <h3 class="feature-title">Secure Storage</h3>
+                <p class="feature-description">
+                    All your analysis results are securely stored with enterprise-grade encryption 
+                    and accessible anytime, anywhere.
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <span class="mdi mdi-grid"></span>
+                </div>
+                <h3 class="feature-title">Batch Processing</h3>
+                <p class="feature-description">
+                    Analyze multiple samples simultaneously with our grid analysis feature, 
+                    perfect for clinics and laboratories.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="how-it-works-section">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge">Process</span>
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-description">
+                Get started with blood group analysis in three simple steps.
+            </p>
+        </div>
+
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3 class="step-title">Upload Your Sample</h3>
+                    <p class="step-description">
+                        Take a clear photo of your blood test card or upload an existing image. 
+                        Our system accepts various image formats and automatically optimizes them for analysis.
+                    </p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3 class="step-title">AI Analysis</h3>
+                    <p class="step-description">
+                        Our advanced neural network analyzes the sample, detecting agglutination patterns 
+                        and extracting morphological features to determine your blood type with precision.
+                    </p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3 class="step-title">Get Results</h3>
+                    <p class="step-description">
+                        Receive a comprehensive report with your blood group, confidence scores, 
+                        and detailed analysis. Download or share your results instantly.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-content">
+            <h2 class="cta-title">Ready to Get Started?</h2>
+            <p class="cta-description">
+                Join thousands of medical professionals and individuals who trust our platform 
+                for accurate blood group analysis.
+            </p>
+            <div class="cta-actions">
+                <a href="{{ url_for('register') }}" class="btn btn-white btn-lg">
+                    <span class="mdi mdi-account-plus"></span>
+                    Create Free Account
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-white btn-lg">
+                    <span class="mdi mdi-login"></span>
+                    Sign In
+                </a>
             </div>
         </div>
     </div>

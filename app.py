@@ -215,7 +215,7 @@ def dashboard():
 @login_required
 def analyze():
     """New analysis page - FIXED route name"""
-    return render_template('index.html')
+    return render_template('analyze.html')
 
 @app.route('/history')
 @login_required

@@ -1,423 +1,613 @@
 {% extends "base.html" %}
-{% block title %}New ESR Analysis{% endblock %}
+{% block title %}New Analysis - ESR{% endblock %}
+
+{% block head_extra %}
+<style>
+    .analyze-container {
+        padding: 2rem 0;
+        min-height: calc(100vh - 10rem);
+    }
+
+    .analyze-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .page-title {
+        font-size: var(--font-size-4xl);
+        font-weight: 800;
+        margin-bottom: 0.75rem;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .page-description {
+        font-size: var(--font-size-lg);
+        color: var(--text-secondary);
+    }
+
+    .analyze-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+
+    .upload-card {
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        padding: 2.5rem;
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow-md);
+    }
+
+    .upload-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .upload-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 2rem 1rem;
+        background: var(--background);
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-lg);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        text-align: center;
+    }
+
+    .upload-option:hover {
+        border-color: var(--primary-color);
+        background: var(--accent-pink);
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .option-icon {
+        font-size: 3rem;
+        color: var(--primary-color);
+    }
+
+    .option-title {
+        font-size: var(--font-size-lg);
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .option-description {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+    }
+
+    .drop-zone {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 3rem 2rem;
+        text-align: center;
+        background: var(--background);
+        transition: all var(--transition-normal);
+        cursor: pointer;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+        border-color: var(--primary-color);
+        background: var(--accent-pink);
+    }
+
+    .drop-zone.drag-over {
+        transform: scale(1.02);
+    }
+
+    .drop-icon {
+        font-size: 4rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+
+    .drop-title {
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .drop-subtitle {
+        font-size: var(--font-size-base);
+        color: var(--text-secondary);
+    }
+
+    .file-info {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--accent-pink);
+        border-radius: var(--radius-lg);
+        display: none;
+    }
+
+    .file-info.active {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .file-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--gradient-primary);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .file-details {
+        flex: 1;
+    }
+
+    .file-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .file-size {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+    }
+
+    .preview-card {
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        padding: 2.5rem;
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .preview-area {
+        flex: 1;
+        background: var(--background);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+        margin-bottom: 2rem;
+        overflow: hidden;
+        border: 1px solid var(--border-light);
+    }
+
+    .preview-area img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: var(--radius-lg);
+    }
+
+    .preview-empty {
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    .preview-empty-icon {
+        font-size: 5rem;
+        margin-bottom: 1rem;
+    }
+
+    .preview-empty-text {
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn-lg {
+        padding: 1rem 2rem;
+        font-size: var(--font-size-lg);
+    }
+
+    .btn-loading {
+        position: relative;
+        pointer-events: none;
+    }
+
+    .btn-loading::before {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-right: 0.5rem;
+    }
+
+    /* Webcam Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: var(--z-modal);
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(8px);
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        max-width: 600px;
+        width: 90%;
+        box-shadow: var(--shadow-lg);
+        animation: fadeInUp 0.3s ease-out;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+        font-size: var(--font-size-2xl);
+        font-weight: 700;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: color var(--transition-fast);
+    }
+
+    .modal-close:hover {
+        color: var(--text-primary);
+    }
+
+    .webcam-feed {
+        width: 100%;
+        border-radius: var(--radius-lg);
+        margin-bottom: 1.5rem;
+        background: var(--background);
+    }
+
+    @media (max-width: 1024px) {
+        .analyze-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .upload-options {
+            grid-template-columns: 1fr;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-buttons .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container analysis-container">
-    <div class="analysis-grid">
-        <div class="upload-section card">
-            <div class="card-header">
-                <h2>Upload ESR Image</h2>
-                <p class="text-muted">Upload a clear image of your ESR test for analysis</p>
-            </div>
-
-            <div class="upload-options">
-                <button class="upload-option" onclick="document.getElementById('file-input').click()">
-                    <span class="mdi mdi-file-image-outline option-icon"></span>
-                    <span class="option-label">Choose File</span>
-                    <span class="option-desc">Upload from your device</span>
-                </button>
-
-                <button class="upload-option" id="webcam-btn">
-                    <span class="mdi mdi-camera option-icon"></span>
-                    <span class="option-label">Use Camera</span>
-                    <span class="option-desc">Take a photo now</span>
-                </button>
-            </div>
-
-            <div id="drop-zone" class="drop-zone">
-                <span class="mdi mdi-cloud-upload-outline drop-icon"></span>
-                <p class="drop-title">Drag and drop your image here</p>
-                <p class="drop-subtitle">or click the options above</p>
-            </div>
-
-            <input type="file" id="file-input" hidden accept="image/*">
+<div class="analyze-container">
+    <div class="container">
+        <!-- Page Header -->
+        <div class="analyze-header animate-fade-in">
+            <h1 class="page-title">New Blood Analysis</h1>
+            <p class="page-description">Upload a test image or capture one using your camera</p>
         </div>
 
-        <div class="preview-section card">
-            <div class="card-header">
-                <h2>Image Preview</h2>
-                <p class="text-muted">Review your image before analysis</p>
-            </div>
-
-            <div class="preview-area" id="preview-area">
-                <div class="empty-preview">
-                    <span class="mdi mdi-image-outline"></span>
-                    <p>No image selected</p>
-                </div>
-            </div>
-
-            <div class="analysis-controls">
-                <button id="analyze-btn" class="btn btn-primary btn-lg" disabled>
-                    <span class="mdi mdi-microscope"></span>
-                    Start Analysis
-                </button>
-                <button id="reset-btn" class="btn btn-outline btn-lg" disabled>
-                    <span class="mdi mdi-refresh"></span>
-                    Reset
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="results-section" class="results-section card" style="display: none;">
-        <div class="card-header">
-            <h2>Analysis Results</h2>
-            <p class="text-muted">ESR analysis results and interpretation</p>
-        </div>
-
-        <div class="results-content">
-            <div class="result-item">
-                <span class="result-label">ESR Value</span>
-                <span class="result-value" id="esr-value">--</span>
-            </div>
-
-            <div class="result-item">
-                <span class="result-label">Analysis Confidence</span>
-                <div class="confidence-bar">
-                    <div class="confidence-progress" id="confidence-bar"></div>
-                </div>
-                <span class="confidence-value" id="confidence-value">--%</span>
-            </div>
-
-            <div class="result-item">
-                <span class="result-label">Additional Information</span>
-                <div class="info-grid">
-                    <div class="info-card">
-                        <span class="mdi mdi-clock-outline info-icon"></span>
-                        <span class="info-label">Analysis Time</span>
-                        <span class="info-value" id="analysis-time">--:--</span>
+        <!-- Main Grid -->
+        <div class="analyze-grid">
+            <!-- Upload Section -->
+            <div class="upload-card animate-fade-in" style="animation-delay: 0.1s;">
+                <h2 class="card-title mb-4">Upload Options</h2>
+                
+                <div class="upload-options">
+                    <div class="upload-option" onclick="document.getElementById('file-input').click()">
+                        <span class="mdi mdi-folder-open option-icon"></span>
+                        <div class="option-title">Choose File</div>
+                        <div class="option-description">Select from device</div>
                     </div>
-                    <div class="info-card">
-                        <span class="mdi mdi-chart-bell-curve info-icon"></span>
-                        <span class="info-label">Method</span>
-                        <span class="info-value">AI-Enhanced</span>
+
+                    <div class="upload-option" id="webcam-trigger">
+                        <span class="mdi mdi-camera option-icon"></span>
+                        <div class="option-title">Use Camera</div>
+                        <div class="option-description">Take photo now</div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="results-actions">
-            <button class="btn btn-primary" id="save-results">
-                <span class="mdi mdi-content-save"></span>
-                Save Results
-            </button>
-            <button class="btn btn-outline" id="download-report">
-                <span class="mdi mdi-file-pdf-box"></span>
-                Download Report
-            </button>
+                <form id="upload-form">
+                    <input type="file" id="file-input" accept="image/*" hidden>
+                    
+                    <div class="drop-zone" id="drop-zone">
+                        <div class="mdi mdi-cloud-upload drop-icon"></div>
+                        <div class="drop-title">Drag & Drop Image Here</div>
+                        <div class="drop-subtitle">or use the options above</div>
+                    </div>
+
+                    <div class="file-info" id="file-info">
+                        <div class="file-icon">
+                            <span class="mdi mdi-file-image"></span>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name" id="file-name"></div>
+                            <div class="file-size" id="file-size"></div>
+                        </div>
+                        <button type="button" class="btn btn-ghost" onclick="clearFile()">
+                            <span class="mdi mdi-close"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-card animate-fade-in" style="animation-delay: 0.2s;">
+                <h2 class="card-title mb-4">Preview</h2>
+                
+                <div class="preview-area" id="preview-area">
+                    <div class="preview-empty">
+                        <div class="mdi mdi-image-outline preview-empty-icon"></div>
+                        <div class="preview-empty-text">No image selected</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-primary btn-lg w-full" id="analyze-btn" disabled>
+                        <span class="mdi mdi-microscope"></span>
+                        <span id="analyze-text">Analyze Image</span>
+                    </button>
+                    <button type="button" class="btn btn-outline btn-lg" id="reset-btn" disabled onclick="clearFile()">
+                        <span class="mdi mdi-refresh"></span>
+                        Reset
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<style>
-.analysis-container {
-    padding: 2rem 0;
-}
-
-.analysis-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.card-header {
-    margin-bottom: 1.5rem;
-}
-
-.card-header h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.upload-options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.upload-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 1.5rem;
-    background: var(--background);
-    border: 1px solid var(--border-color);
-    border-radius: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.upload-option:hover {
-    border-color: var(--primary-color);
-    background: #f8fafc;
-}
-
-.option-icon {
-    font-size: 2rem;
-    color: var(--primary-color);
-    margin-bottom: 0.5rem;
-}
-
-.option-label {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.option-desc {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-.drop-zone {
-    border: 2px dashed var(--border-color);
-    border-radius: 0.75rem;
-    padding: 2rem;
-    text-align: center;
-    transition: all 0.2s;
-}
-
-.drop-zone.drag-over {
-    border-color: var(--primary-color);
-    background: #f8fafc;
-}
-
-.drop-icon {
-    font-size: 3rem;
-    color: var(--text-secondary);
-    margin-bottom: 1rem;
-}
-
-.drop-title {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.drop-subtitle {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-.preview-area {
-    aspect-ratio: 16/9;
-    background: var(--background);
-    border-radius: 0.75rem;
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-}
-
-.empty-preview {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-}
-
-.empty-preview .mdi {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-}
-
-.analysis-controls {
-    display: flex;
-    gap: 1rem;
-}
-
-.btn-lg {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.125rem;
-}
-
-.results-section {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.3s ease;
-}
-
-.results-section.visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.results-content {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-.result-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.result-label {
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.result-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--primary-color);
-}
-
-.confidence-bar {
-    height: 0.5rem;
-    background: var(--background);
-    border-radius: 1rem;
-    overflow: hidden;
-}
-
-.confidence-progress {
-    height: 100%;
-    background: var(--primary-color);
-    width: 0%;
-    transition: width 1s ease;
-}
-
-.confidence-value {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
-
-.info-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 1.5rem;
-    background: var(--background);
-    border-radius: 0.75rem;
-}
-
-.info-icon {
-    font-size: 2rem;
-    color: var(--primary-color);
-    margin-bottom: 0.5rem;
-}
-
-.info-label {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.25rem;
-}
-
-.info-value {
-    font-weight: 600;
-}
-
-.results-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-@media (max-width: 768px) {
-    .upload-options {
-        grid-template-columns: 1fr;
-    }
-
-    .results-actions {
-        flex-direction: column;
-    }
-}
-</style>
+<!-- Webcam Modal -->
+<div class="modal" id="webcam-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Capture Image</h3>
+            <button class="modal-close" onclick="closeWebcam()">
+                <span class="mdi mdi-close"></span>
+            </button>
+        </div>
+        <video class="webcam-feed" id="webcam-feed" autoplay playsinline></video>
+        <button class="btn btn-primary btn-lg w-full" id="capture-btn">
+            <span class="mdi mdi-camera"></span>
+            Capture Photo
+        </button>
+    </div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const previewArea = document.getElementById('preview-area');
-    const analyzeBtn = document.getElementById('analyze-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    const resultsSection = document.getElementById('results-section');
+let selectedFile = null;
+let stream = null;
 
-    // Drag and drop handlers
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
+// DOM Elements
+const fileInput = document.getElementById('file-input');
+const dropZone = document.getElementById('drop-zone');
+const fileInfo = document.getElementById('file-info');
+const fileName = document.getElementById('file-name');
+const fileSize = document.getElementById('file-size');
+const previewArea = document.getElementById('preview-area');
+const analyzeBtn = document.getElementById('analyze-btn');
+const resetBtn = document.getElementById('reset-btn');
+const analyzeText = document.getElementById('analyze-text');
+const webcamModal = document.getElementById('webcam-modal');
+const webcamFeed = document.getElementById('webcam-feed');
+
+// File Input Handler
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+    }
+});
+
+// Drag and Drop Handlers
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
         dropZone.classList.add('drag-over');
     });
+});
 
-    dropZone.addEventListener('dragleave', () => {
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
         dropZone.classList.remove('drag-over');
     });
+});
 
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
-            handleFile(file);
-        }
-    });
+dropZone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFile(files[0]);
+    }
+});
 
-    // File input handler
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            handleFile(file);
-        }
-    });
-
-    function handleFile(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            previewArea.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: contain;">`;
-            analyzeBtn.disabled = false;
-            resetBtn.disabled = false;
-        };
-        reader.readAsDataURL(file);
+// Handle File Selection
+function handleFile(file) {
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
     }
 
-    // Reset button handler
-    resetBtn.addEventListener('click', () => {
-        previewArea.innerHTML = `
-            <div class="empty-preview">
-                <span class="mdi mdi-image-outline"></span>
-                <p>No image selected</p>
-            </div>
-        `;
-        fileInput.value = '';
-        analyzeBtn.disabled = true;
-        resetBtn.disabled = true;
-        resultsSection.style.display = 'none';
-    });
+    selectedFile = file;
+    
+    // Update file info
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    fileInfo.classList.add('active');
 
-    // Analyze button handler
-    analyzeBtn.addEventListener('click', async () => {
-        // Show loading state
-        analyzeBtn.disabled = true;
-        analyzeBtn.innerHTML = '<span class="mdi mdi-loading mdi-spin"></span> Analyzing...';
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        previewArea.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+    };
+    reader.readAsDataURL(file);
 
-        // TODO: Replace with actual API call
-        setTimeout(() => {
-            resultsSection.style.display = 'block';
-            requestAnimationFrame(() => {
-                resultsSection.classList.add('visible');
-            });
+    // Enable buttons
+    analyzeBtn.disabled = false;
+    resetBtn.disabled = false;
+}
 
-            // Update results
-            document.getElementById('esr-value').textContent = '15 mm/hr';
-            document.getElementById('confidence-bar').style.width = '95%';
-            document.getElementById('confidence-value').textContent = '95%';
-            document.getElementById('analysis-time').textContent = new Date().toLocaleTimeString();
+// Clear File
+function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileInfo.classList.remove('active');
+    previewArea.innerHTML = `
+        <div class="preview-empty">
+            <div class="mdi mdi-image-outline preview-empty-icon"></div>
+            <div class="preview-empty-text">No image selected</div>
+        </div>
+    `;
+    analyzeBtn.disabled = true;
+    resetBtn.disabled = true;
+}
 
-            // Reset button state
-            analyzeBtn.innerHTML = '<span class="mdi mdi-microscope"></span> Start Analysis';
+// Format File Size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Analyze Button Handler
+analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    // Show loading state
+    analyzeBtn.classList.add('btn-loading');
+    analyzeBtn.disabled = true;
+    analyzeText.textContent = 'Analyzing...';
+
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+        const response = await fetch("{{ url_for('upload_file') }}", {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.report_id) {
+            // Redirect to report
+            window.location.href = `/report/${data.report_id}`;
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error occurred'));
+            analyzeBtn.classList.remove('btn-loading');
             analyzeBtn.disabled = false;
-        }, 2000);
-    });
+            analyzeText.textContent = 'Analyze Image';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An unexpected error occurred. Please try again.');
+        analyzeBtn.classList.remove('btn-loading');
+        analyzeBtn.disabled = false;
+        analyzeText.textContent = 'Analyze Image';
+    }
+});
+
+// Webcam Functions
+document.getElementById('webcam-trigger').addEventListener('click', openWebcam);
+
+async function openWebcam() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment' } 
+        });
+        webcamFeed.srcObject = stream;
+        webcamModal.classList.add('active');
+    } catch (error) {
+        console.error('Error accessing webcam:', error);
+        alert('Could not access camera. Please ensure you have granted permission.');
+    }
+}
+
+function closeWebcam() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    webcamModal.classList.remove('active');
+}
+
+document.getElementById('capture-btn').addEventListener('click', () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = webcamFeed.videoWidth;
+    canvas.height = webcamFeed.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(webcamFeed, 0, 0);
+
+    canvas.toBlob((blob) => {
+        const file = new File([blob], 'webcam_capture.jpg', { type: 'image/jpeg' });
+        handleFile(file);
+        
+        // Update file input
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+        
+        closeWebcam();
+    }, 'image/jpeg');
+});
+
+// Close modal on outside click
+webcamModal.addEventListener('click', (e) => {
+    if (e.target === webcamModal) {
+        closeWebcam();
+    }
 });
 </script>
 {% endblock %}
