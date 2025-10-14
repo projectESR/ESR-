@@ -14,17 +14,24 @@ from skimage.feature import graycomatrix, graycoprops
 from datetime import datetime
 import cv2
 
+# IMPORT BLOOD IMAGE VALIDATOR 
+from blood_validator import BloodImageValidator
+
 #App & Database Configuration 
 DATABASE = 'database.db'
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['SECRET_KEY'] = 'your-secret-key-here-change-this-in-production'
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB for batch uploads
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Initialize Blood Validator
+validator = BloodImageValidator()
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -55,10 +62,10 @@ MODEL_PATH = 'models/final_blood_grouping_model.h5'
 MODEL_IMG_SIZE = (224, 224) 
 try:
     model = load_model(MODEL_PATH)
-    print(" Deep Learning model loaded successfully.")
+    print("✓ Deep Learning model loaded successfully.")
 except Exception as e:
     model = None
-    print(f" Error loading model: {e}")
+    print(f"✗ Error loading model: {e}")
 
 ANTIBODY_TYPES = ["Anti-A", "Anti-B", "Anti-D (Rh)"]
 BLOOD_TYPE_RULES = {
@@ -68,9 +75,7 @@ BLOOD_TYPE_RULES = {
     (False, False, True): "O+", (False, False, False): "O-",
 }
 
-# ==============================================================================
 # Core Analysis Functions
-# ==============================================================================
 def preprocess_for_model(img_pil):
     img_resized = img_pil.resize(MODEL_IMG_SIZE)
     img_array = np.array(img_resized)
@@ -96,34 +101,25 @@ def analyze_single_section(img_pil):
     AGGLUTINATION_THRESHOLD = 0.3
     agglutination = bool(prediction > AGGLUTINATION_THRESHOLD)
     
-    # Calculate base confidence
     raw_confidence = float(prediction) if agglutination else 1 - float(prediction)
     
-    # CONFIDENCE FOR VISUAL CLARITY
     if agglutination:
-        # For POSITIVE results
         if raw_confidence < 0.94:
-            # Final model value
             adjusted_confidence = random.uniform(94.0, 99.0)
-            print(f" POSITIVE result: {raw_confidence * 100:.2f}% → {adjusted_confidence:.2f}%")
+            print(f"✓ POSITIVE result: {raw_confidence * 100:.2f}% → {adjusted_confidence:.2f}%")
         else:
             adjusted_confidence = raw_confidence * 100
     else:
-        # For NEGATIVE results: Keep existing logic (should already be high)
         if raw_confidence > 0.5:
             adjusted_confidence = max(88.0 + (raw_confidence - 0.5) * 24, raw_confidence * 100)
         else:
             adjusted_confidence = raw_confidence * 100
         
-        # Ensure negative confidence is precise.
         if adjusted_confidence < 90.0:
             adjusted_confidence = random.uniform(90.0, 95.0)
-            print(f" NEGATIVE result augmented: {raw_confidence * 100:.2f}% → {adjusted_confidence:.2f}%")
+            print(f"✓ NEGATIVE result augmented: {raw_confidence * 100:.2f}% → {adjusted_confidence:.2f}%")
     
     features = get_morphological_features(img_pil)
-    
-    print(f"Raw prediction: {prediction:.4f}, Threshold: {AGGLUTINATION_THRESHOLD}")
-    print(f"Result: {'POSITIVE' if agglutination else 'NEGATIVE'}, Final Confidence: {adjusted_confidence:.2f}%")
     
     return {
         "agglutination": agglutination,
@@ -131,9 +127,7 @@ def analyze_single_section(img_pil):
         "features": features
     }
 
-# ==============================================================================
 # Flask Routes
-# ==============================================================================
 
 @app.route('/')
 def landing():
@@ -262,52 +256,102 @@ def report(report_id):
 def view_report(report_id):
     return redirect(url_for('report', report_id=report_id))
 
+#  BATCH PROCESSING
 @app.route('/batch', methods=['GET', 'POST'])
 @login_required
 def batch_process():
     if request.method == 'POST':
-        if 'file' not in request.files:
-            return "No file part", 400
-        file = request.files['file']
-        if file.filename == '':
-            return "No selected file", 400
-
-        image_bytes = file.read()
-        original_image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+        if 'files' not in request.files:
+            flash('No files uploaded.', 'error')
+            return redirect(url_for('batch_process'))
         
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img_cv = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        img_height, img_width, _ = img_cv.shape
-
-        img_gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-        img_blur = cv2.GaussianBlur(img_gray, (7, 7), 0)
+        files = request.files.getlist('files')
         
-        thresh = cv2.adaptiveThreshold(img_blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        results = []
+        if len(files) == 0:
+            flash('Please select at least one file.', 'error')
+            return redirect(url_for('batch_process'))
         
-        for cnt in contours:
-            if cv2.contourArea(cnt) < 500:
+        batch_results = []
+        rejected_files = []
+        
+        for file in files:
+            if file.filename == '':
                 continue
-
-            x, y, w, h = cv2.boundingRect(cnt)
-            sample_img_np = img_cv[y:y+h, x:x+w]
-            sample_img_pil = Image.fromarray(cv2.cvtColor(sample_img_np, cv2.COLOR_BGR2RGB))
             
-            analysis_result = analyze_single_section(sample_img_pil)
-            blood_type_label = "POS" if analysis_result["agglutination"] else "NEG"
+            try:
+                image_bytes = file.read()
+                
+                # VALIDATE BLOOD IMAGE
+                is_valid, validation_reason, validation_confidence = validator.validate(image_bytes)
+                
+                if not is_valid:
+                    rejected_files.append({
+                        'filename': file.filename,
+                        'reason': validation_reason,
+                        'confidence': validation_confidence
+                    })
+                    continue
+                
+                # Process grid in uploaded file
+                nparr = np.frombuffer(image_bytes, np.uint8)
+                img_cv = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                img_height, img_width, _ = img_cv.shape
 
-            results.append({
-                "blood_type": blood_type_label,
-                "x_percent": ((x + w / 2) / img_width) * 100,
-                "y_percent": ((y + h / 2) / img_height) * 100,
-            })
+                img_gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+                img_blur = cv2.GaussianBlur(img_gray, (7, 7), 0)
+                
+                thresh = cv2.adaptiveThreshold(img_blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+                contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        return render_template('batch_results.html', results=results, original_image_b64=original_image_b64)
+                file_results = []
+                
+                for idx, cnt in enumerate(contours):
+                    if cv2.contourArea(cnt) < 500:
+                        continue
+
+                    x, y, w, h = cv2.boundingRect(cnt)
+                    sample_img_np = img_cv[y:y+h, x:x+w]
+                    sample_img_pil = Image.fromarray(cv2.cvtColor(sample_img_np, cv2.COLOR_BGR2RGB))
+                    
+                    analysis_result = analyze_single_section(sample_img_pil)
+                    blood_type_label = "POS" if analysis_result["agglutination"] else "NEG"
+
+                    file_results.append({
+                        "blood_type": blood_type_label,
+                        "x_percent": ((x + w / 2) / img_width) * 100,
+                        "y_percent": ((y + h / 2) / img_height) * 100,
+                        "sample_index": idx + 1
+                    })
+                
+                batch_results.append({
+                    'filename': file.filename,
+                    'image_b64': base64.b64encode(image_bytes).decode('utf-8'),
+                    'samples': file_results,
+                    'sample_count': len(file_results),
+                    'validation_confidence': validation_confidence
+                })
+                
+            except Exception as e:
+                rejected_files.append({
+                    'filename': file.filename,
+                    'reason': f'Processing error: {str(e)}',
+                    'confidence': 0.0
+                })
+        
+        if not batch_results and rejected_files:
+            flash(f'All {len(rejected_files)} file(s) were rejected.', 'error')
+            return redirect(url_for('batch_process'))
+        
+        if rejected_files:
+            flash(f'Processed {len(batch_results)} file(s). Rejected {len(rejected_files)} non-blood image(s).', 'warning')
+        
+        return render_template('batch_results.html', 
+                             batch_results=batch_results, 
+                             rejected_files=rejected_files)
 
     return render_template('batch.html')
 
+#  ANALYZE(single file)
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload_file():
@@ -320,6 +364,13 @@ def upload_file():
     if file:
         try:
             image_bytes = file.read()
+            
+            # VALIDATE BLOOD IMAGE
+            is_valid, validation_reason, validation_confidence = validator.validate(image_bytes)
+            
+            if not is_valid:
+                return jsonify({'error': f'Not a valid blood test image: {validation_reason}'}), 400
+            
             img_pil = Image.open(io.BytesIO(image_bytes)).convert('RGB')
             img_np = np.array(img_pil)
             h, w, _ = img_np.shape
@@ -360,9 +411,7 @@ def upload_file():
 def inject_current_year():
     return {'current_year': datetime.now().year}
 
-# ==============================================================================
 # Main Execution
-# ==============================================================================
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', port=5000, debug=True)
