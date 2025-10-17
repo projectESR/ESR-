@@ -1,102 +1,557 @@
 {% extends "base.html" %}
-{% block title %}Grid Analysis{% endblock %}
+{% block title %}Batch Upload - Grid Analysis{% endblock %}
 
-{% block content %}
+{% block head_extra %}
 <style>
-    .card {
-        background: var(--card-bg);
-        backdrop-filter: blur(25px);
-        -webkit-backdrop-filter: blur(25px);
-        border-radius: 16px;
-        border: 1px solid var(--border-color);
-        padding: 2rem;
+    .batch-container {
+        padding: 2rem 0;
+        min-height: calc(100vh - 10rem);
     }
-    .header { text-align: center; }
-    .header h1 { font-weight: 800; font-size: 1.8rem; color: #fff; }
-    .header p { font-size: 1rem; margin-top: 0.5rem; color: var(--text-muted); }
-    #upload-area {
-        border: 2px dashed var(--border-color);
-        border-radius: 12px;
-        padding: 2.5rem;
+
+    .batch-header {
         text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .batch-title {
+        font-size: var(--font-size-4xl);
+        font-weight: 800;
+        margin-bottom: 0.75rem;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .batch-description {
+        font-size: var(--font-size-lg);
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+
+    .batch-info {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+    }
+
+    .info-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: var(--accent-pink);
+        border-radius: var(--radius-full);
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .info-badge-icon {
+        font-size: 1.1rem;
+    }
+
+    /* Upload Card */
+    .upload-card {
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        padding: 3rem;
+        border: 1px solid var(--border-light);
+        box-shadow: var(--shadow-md);
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .drop-zone {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 4rem 2rem;
+        text-align: center;
+        background: var(--background);
+        transition: all var(--transition-normal);
         cursor: pointer;
-        transition: all 0.3s;
-        margin-top: 2rem;
     }
-    #upload-area:hover, #upload-area.drag-over {
-        border-color: var(--accent-color);
-        background-color: rgba(230, 57, 70, 0.1);
+
+    .drop-zone:hover {
+        border-color: var(--primary-color);
+        background: var(--accent-pink);
+        transform: translateY(-2px);
     }
-    #upload-area p { margin: 0; font-weight: 600; font-size: 1.1rem; }
-    #file-name { margin-top: 1rem; text-align: left; color: var(--text-muted); }
-    #submit-btn {
-        background-color: var(--accent-color);
-        color: white;
-        border: none;
-        padding: 0.9rem 1.5rem;
-        font-size: 1rem;
+
+    .drop-zone.drag-over {
+        border-color: var(--primary-color);
+        background: var(--accent-pink);
+        transform: scale(1.02);
+        box-shadow: var(--shadow-md);
+    }
+
+    .drop-icon {
+        font-size: 4rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .drop-title {
+        font-size: var(--font-size-xl);
         font-weight: 700;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: all 0.3s;
-        width: 100%;
-        margin-top: 1.5rem;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
     }
-    #submit-btn:disabled { background-color: rgba(241, 250, 238, 0.2); color: var(--text-muted); cursor: not-allowed; }
-    #spinner { border: 4px solid rgba(255, 255, 255, 0.2); width: 24px; height: 24px; border-radius: 50%; border-left-color: white; animation: spin 1s ease infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-</style>
 
-<div class="card">
-    <div class="header">
-        <h1>Grid Image Analysis</h1>
-        <p>Upload a single image containing a grid of multiple blood samples.</p>
-    </div>
-    
-    <form action="{{ url_for('batch_process') }}" method="post" enctype="multipart/form-data" id="batch-form">
-        <input type="file" id="file-input" name="file" accept="image/*" hidden>
-        <div id="upload-area">
-            <p id="upload-text">Click or drag a single grid image here</p>
-            <div id="file-name"></div>
-        </div>
-        <button type="submit" id="submit-btn" disabled>
-            <span id="button-text">Analyze Grid</span>
-            <div id="spinner" style="display: none;"></div>
-        </button>
-    </form>
-</div>
+    .drop-subtitle {
+        font-size: var(--font-size-base);
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
 
-<script>
-    const uploadArea = document.getElementById('upload-area');
-    const fileInput = document.getElementById('file-input');
-    const fileNameEl = document.getElementById('file-name');
-    const submitBtn = document.getElementById('submit-btn');
-    const buttonText = document.getElementById('button-text');
-    const spinner = document.getElementById('spinner');
+    .drop-limit {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        padding: 0.5rem 1rem;
+        background: var(--background);
+        border-radius: var(--radius-lg);
+        display: inline-block;
+    }
 
-    uploadArea.addEventListener('click', () => fileInput.click());
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => uploadArea.addEventListener(eventName, preventDefaults, false));
-    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-    ['dragenter', 'dragover'].forEach(eventName => uploadArea.addEventListener(eventName, () => uploadArea.classList.add('drag-over'), false));
-    ['dragleave', 'drop'].forEach(eventName => uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('drag-over'), false));
-    uploadArea.addEventListener('drop', handleDrop, false);
-    fileInput.addEventListener('change', handleFileSelect);
+    /* File List */
+    .file-list {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-light);
+    }
 
-    function handleDrop(e) { handleFiles(e.dataTransfer.files); }
-    function handleFileSelect(e) { handleFiles(e.target.files); }
+    .file-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
 
-    function handleFiles(files) {
-        if (files.length > 0) {
-            fileInput.files = files;
-            fileNameEl.textContent = `File selected: ${files[0].name}`;
-            submitBtn.disabled = false;
+    .file-list-title {
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .file-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0 0.5rem;
+    }
+
+    .file-items {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    /* Custom Scrollbar */
+    .file-items::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .file-items::-webkit-scrollbar-track {
+        background: var(--background);
+        border-radius: var(--radius-lg);
+    }
+
+    .file-items::-webkit-scrollbar-thumb {
+        background: var(--primary-color);
+        border-radius: var(--radius-lg);
+    }
+
+    .file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: var(--background);
+        border-radius: var(--radius-lg);
+        border-left: 3px solid var(--primary-color);
+        animation: slideInLeft 0.3s ease-out;
+    }
+
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
         }
     }
 
-    document.getElementById('batch-form').addEventListener('submit', () => {
-        spinner.style.display = 'block';
-        buttonText.style.display = 'none';
-        submitBtn.disabled = true;
+    .file-item-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .file-item-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--gradient-primary);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .file-item-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .file-item-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        word-break: break-word;
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .file-item-size {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .file-item-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 1.25rem;
+        transition: all var(--transition-fast);
+        flex-shrink: 0;
+        padding: 0.5rem;
+        border-radius: var(--radius-lg);
+    }
+
+    .file-item-remove:hover {
+        color: #EF4444;
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn-submit {
+        flex: 1;
+        padding: 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-submit.loading {
+        position: relative;
+    }
+
+    .btn-submit.loading::before {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        left: 50%;
+        margin-left: -10px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .btn-clear {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .upload-card {
+            padding: 2rem;
+        }
+
+        .drop-zone {
+            padding: 2rem 1rem;
+        }
+
+        .batch-info {
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .info-badge {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="batch-container">
+    <div class="container">
+        <!-- Header -->
+        <div class="batch-header animate-fade-in">
+            <h1 class="batch-title">Batch Upload & Analysis</h1>
+            <p class="batch-description">Upload multiple blood test images for simultaneous processing</p>
+            <div class="batch-info">
+                <div class="info-badge">
+                    <span class="mdi mdi-upload-multiple info-badge-icon"></span>
+                    Upload multiple files at once
+                </div>
+                <div class="info-badge">
+                    <span class="mdi mdi-check-all info-badge-icon"></span>
+                    Automatic validation
+                </div>
+                <div class="info-badge">
+                    <span class="mdi mdi-lightning-bolt info-badge-icon"></span>
+                    Parallel processing
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="upload-card animate-fade-in" style="animation-delay: 0.1s;">
+            <form id="batch-form" method="POST" action="{{ url_for('batch_process') }}" enctype="multipart/form-data">
+                <!-- Drop Zone -->
+                <div class="drop-zone" id="drop-zone">
+                    <div class="drop-icon mdi mdi-cloud-upload"></div>
+                    <div class="drop-title">Drop files here or click to select</div>
+                    <div class="drop-subtitle">Only blood test card images will be processed</div>
+                    <div class="drop-limit">
+                        <span class="mdi mdi-information"></span>
+                        Non-blood images will be automatically rejected
+                    </div>
+                    <input type="file" id="file-input" name="files" multiple accept="image/*" hidden>
+                </div>
+
+                <!-- File List -->
+                <div class="file-list" id="file-list" style="display: none;">
+                    <div class="file-list-header">
+                        <div class="file-list-title">
+                            Selected Files
+                            <span class="file-count" id="file-count">0</span>
+                        </div>
+                    </div>
+                    <div class="file-items" id="file-items"></div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button type="submit" id="submit-btn" class="btn btn-primary btn-submit" disabled>
+                        <span class="mdi mdi-play"></span>
+                        <span id="submit-text">Process Files</span>
+                    </button>
+                    <button type="button" id="clear-btn" class="btn btn-outline btn-clear" disabled onclick="clearAllFiles()">
+                        <span class="mdi mdi-close"></span>
+                        Clear All
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('file-input');
+const dropZone = document.getElementById('drop-zone');
+const fileList = document.getElementById('file-list');
+const fileItems = document.getElementById('file-items');
+const fileCount = document.getElementById('file-count');
+const submitBtn = document.getElementById('submit-btn');
+const clearBtn = document.getElementById('clear-btn');
+const submitText = document.getElementById('submit-text');
+const batchForm = document.getElementById('batch-form');
+
+// Store files in a DataTransfer object to maintain file input compatibility
+let dataTransfer = new DataTransfer();
+
+// File Input Handler
+fileInput.addEventListener('change', (e) => {
+    addFilesToList(e.target.files);
+});
+
+// Drag and Drop Handlers
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+        dropZone.classList.add('drag-over');
     });
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+        dropZone.classList.remove('drag-over');
+    });
+});
+
+dropZone.addEventListener('drop', (e) => {
+    addFilesToList(e.dataTransfer.files);
+});
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+// Add Files to DataTransfer
+function addFilesToList(files) {
+    for (let file of files) {
+        if (file.type.startsWith('image/')) {
+            // Check if file already exists
+            let exists = false;
+            for (let i = 0; i < dataTransfer.items.length; i++) {
+                if (dataTransfer.files[i].name === file.name) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                dataTransfer.items.add(file);
+            }
+        }
+    }
+    
+    // Update the actual file input
+    fileInput.files = dataTransfer.files;
+    updateFileList();
+}
+
+// Update File List Display
+function updateFileList() {
+    fileItems.innerHTML = '';
+    const files = fileInput.files;
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <div class="file-item-info">
+                <div class="file-item-icon">
+                    <span class="mdi mdi-file-image"></span>
+                </div>
+                <div class="file-item-details">
+                    <div class="file-item-name">${file.name}</div>
+                    <div class="file-item-size">${formatFileSize(file.size)}</div>
+                </div>
+            </div>
+            <button type="button" class="file-item-remove mdi mdi-close" data-index="${i}"></button>
+        `;
+        
+        // Add event listener to remove button
+        fileItem.querySelector('.file-item-remove').addEventListener('click', function() {
+            removeFile(parseInt(this.getAttribute('data-index')));
+        });
+        
+        fileItems.appendChild(fileItem);
+    }
+
+    if (files.length > 0) {
+        fileList.style.display = 'block';
+        fileCount.textContent = files.length;
+        submitBtn.disabled = false;
+        clearBtn.disabled = false;
+    } else {
+        fileList.style.display = 'none';
+        submitBtn.disabled = true;
+        clearBtn.disabled = true;
+    }
+}
+
+// Remove Single File
+function removeFile(index) {
+    const newDataTransfer = new DataTransfer();
+    const files = fileInput.files;
+    
+    for (let i = 0; i < files.length; i++) {
+        if (i !== index) {
+            newDataTransfer.items.add(files[i]);
+        }
+    }
+    
+    dataTransfer = newDataTransfer;
+    fileInput.files = dataTransfer.files;
+    updateFileList();
+}
+
+// Clear All Files
+function clearAllFiles() {
+    dataTransfer = new DataTransfer();
+    fileInput.files = dataTransfer.files;
+    fileInput.value = '';
+    updateFileList();
+}
+
+// Format File Size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Submit Form - Traditional form submission
+batchForm.addEventListener('submit', (e) => {
+    if (fileInput.files.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one file.');
+        return;
+    }
+
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    submitText.textContent = 'Processing...';
+    clearBtn.disabled = true;
+
+    // Form will submit naturally to POST /batch
+});
 </script>
 {% endblock %}

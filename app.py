@@ -14,7 +14,7 @@ from skimage.feature import graycomatrix, graycoprops
 from datetime import datetime
 import cv2
 
-# IMPORT BLOOD IMAGE VALIDATOR 
+# ============== IMPORT BLOOD IMAGE VALIDATOR ==============
 from blood_validator import BloodImageValidator
 
 #App & Database Configuration 
@@ -75,7 +75,9 @@ BLOOD_TYPE_RULES = {
     (False, False, True): "O+", (False, False, False): "O-",
 }
 
+# ==============================================================================
 # Core Analysis Functions
+# ==============================================================================
 def preprocess_for_model(img_pil):
     img_resized = img_pil.resize(MODEL_IMG_SIZE)
     img_array = np.array(img_resized)
@@ -127,7 +129,9 @@ def analyze_single_section(img_pil):
         "features": features
     }
 
+# ==============================================================================
 # Flask Routes
+# ==============================================================================
 
 @app.route('/')
 def landing():
@@ -256,7 +260,7 @@ def report(report_id):
 def view_report(report_id):
     return redirect(url_for('report', report_id=report_id))
 
-#  BATCH PROCESSING
+# ============== UPDATED BATCH PROCESSING (MULTI-FILE) ==============
 @app.route('/batch', methods=['GET', 'POST'])
 @login_required
 def batch_process():
@@ -267,22 +271,26 @@ def batch_process():
         
         files = request.files.getlist('files')
         
-        if len(files) == 0:
+        if len(files) == 0 or (len(files) == 1 and files[0].filename == ''):
             flash('Please select at least one file.', 'error')
             return redirect(url_for('batch_process'))
         
         batch_results = []
         rejected_files = []
         
+        print(f"Processing {len(files)} files...")
+        
         for file in files:
             if file.filename == '':
                 continue
             
             try:
+                print(f"Processing file: {file.filename}")
                 image_bytes = file.read()
                 
                 # VALIDATE BLOOD IMAGE
                 is_valid, validation_reason, validation_confidence = validator.validate(image_bytes)
+                print(f"Validation result for {file.filename}: {is_valid} - {validation_reason}")
                 
                 if not is_valid:
                     rejected_files.append({
@@ -292,51 +300,56 @@ def batch_process():
                     })
                     continue
                 
-                # Process grid in uploaded file
-                nparr = np.frombuffer(image_bytes, np.uint8)
-                img_cv = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                img_height, img_width, _ = img_cv.shape
+                # PROCESS AS COMPLETE BLOOD TEST CARD (3 sections: Anti-A, Anti-B, Anti-D)
+                img_pil = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+                img_np = np.array(img_pil)
+                h, w, _ = img_np.shape
 
-                img_gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-                img_blur = cv2.GaussianBlur(img_gray, (7, 7), 0)
+                # Divide into 3 equal sections horizontally
+                num_sections = 3
+                section_width = w // num_sections
+                sections_np = [img_np[:, i * section_width:(i + 1) * section_width] for i in range(num_sections)]
                 
-                thresh = cv2.adaptiveThreshold(img_blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-                contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-                file_results = []
+                analysis_results = []
+                agglutination_tuple = []
                 
-                for idx, cnt in enumerate(contours):
-                    if cv2.contourArea(cnt) < 500:
-                        continue
-
-                    x, y, w, h = cv2.boundingRect(cnt)
-                    sample_img_np = img_cv[y:y+h, x:x+w]
-                    sample_img_pil = Image.fromarray(cv2.cvtColor(sample_img_np, cv2.COLOR_BGR2RGB))
-                    
-                    analysis_result = analyze_single_section(sample_img_pil)
-                    blood_type_label = "POS" if analysis_result["agglutination"] else "NEG"
-
-                    file_results.append({
-                        "blood_type": blood_type_label,
-                        "x_percent": ((x + w / 2) / img_width) * 100,
-                        "y_percent": ((y + h / 2) / img_height) * 100,
-                        "sample_index": idx + 1
+                for i, section_np in enumerate(sections_np):
+                    section_pil = Image.fromarray(section_np)
+                    result = analyze_single_section(section_pil)
+                    analysis_results.append({
+                        "name": ANTIBODY_TYPES[i],
+                        "agglutination": result['agglutination'],
+                        "confidence": result['confidence']
                     })
+                    agglutination_tuple.append(result['agglutination'])
+                
+                # Determine final blood type
+                final_blood_type = BLOOD_TYPE_RULES.get(tuple(agglutination_tuple), "Undetermined")
+                
+                print(f"Blood type for {file.filename}: {final_blood_type}")
+                print(f"  Anti-A: {'POS' if agglutination_tuple[0] else 'NEG'}")
+                print(f"  Anti-B: {'POS' if agglutination_tuple[1] else 'NEG'}")
+                print(f"  Anti-D: {'POS' if agglutination_tuple[2] else 'NEG'}")
                 
                 batch_results.append({
                     'filename': file.filename,
                     'image_b64': base64.b64encode(image_bytes).decode('utf-8'),
-                    'samples': file_results,
-                    'sample_count': len(file_results),
+                    'blood_type': final_blood_type,
+                    'analysis_results': analysis_results,
                     'validation_confidence': validation_confidence
                 })
                 
             except Exception as e:
+                print(f"Error processing {file.filename}: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 rejected_files.append({
                     'filename': file.filename,
                     'reason': f'Processing error: {str(e)}',
                     'confidence': 0.0
                 })
+        
+        print(f"Total processed: {len(batch_results)}, Total rejected: {len(rejected_files)}")
         
         if not batch_results and rejected_files:
             flash(f'All {len(rejected_files)} file(s) were rejected.', 'error')
@@ -344,6 +357,8 @@ def batch_process():
         
         if rejected_files:
             flash(f'Processed {len(batch_results)} file(s). Rejected {len(rejected_files)} non-blood image(s).', 'warning')
+        else:
+            flash(f'Successfully processed {len(batch_results)} file(s).', 'success')
         
         return render_template('batch_results.html', 
                              batch_results=batch_results, 
@@ -351,7 +366,7 @@ def batch_process():
 
     return render_template('batch.html')
 
-#  ANALYZE(single file)
+# ============== SINGLE FILE UPLOAD (EXISTING ANALYZE) ==============
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload_file():
@@ -411,7 +426,9 @@ def upload_file():
 def inject_current_year():
     return {'current_year': datetime.now().year}
 
+# ==============================================================================
 # Main Execution
+# ==============================================================================
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', port=5000, debug=True)

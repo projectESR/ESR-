@@ -155,47 +155,41 @@
         border-radius: var(--radius-lg);
     }
 
-    /* Sample Results Overlay */
-    .sample-overlay {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-    }
-
-    .result-badge {
-        position: absolute;
-        transform: translate(-50%, -50%);
+    /* Blood Type Result Display */
+    .blood-type-display {
+        padding: 2rem;
         text-align: center;
-    }
-
-    .badge-content {
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.5rem;
-        font-weight: 700;
-        font-size: 0.9rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .badge-content.positive {
-        background: rgba(220, 38, 38, 0.9);
-    }
-
-    .badge-content.negative {
-        background: rgba(37, 99, 235, 0.9);
-    }
-
-    /* Sample Results Summary */
-    .samples-summary {
-        padding: 1.5rem;
+        background: linear-gradient(135deg, rgba(255, 0, 50, 0.05), rgba(255, 0, 50, 0.02));
         border-top: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border-light);
     }
 
-    .samples-title {
+    .blood-type-label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .blood-type-value {
+        font-size: 3.5rem;
+        font-weight: 800;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 1rem;
+    }
+
+    /* Analysis Results Summary */
+    .analysis-summary {
+        padding: 1.5rem;
+    }
+
+    .analysis-title {
         font-weight: 600;
         color: var(--text-secondary);
         text-transform: uppercase;
@@ -204,48 +198,65 @@
         margin-bottom: 1rem;
     }
 
-    .samples-list {
+    .analysis-list {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
     }
 
-    .sample-item {
+    .analysis-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.75rem;
+        padding: 0.75rem 1rem;
         background: var(--background);
         border-radius: var(--radius-lg);
         border-left: 3px solid;
         font-size: 0.9rem;
     }
 
-    .sample-item.positive {
+    .analysis-item.positive {
         border-color: #DC2626;
         background: rgba(220, 38, 38, 0.05);
     }
 
-    .sample-item.negative {
+    .analysis-item.negative {
         border-color: #2563EB;
         background: rgba(37, 99, 235, 0.05);
     }
 
-    .sample-label {
-        color: var(--text-secondary);
+    .analysis-antibody {
+        font-weight: 600;
+        color: var(--text-primary);
     }
 
-    .sample-result {
+    .analysis-result {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .result-badge-small {
+        padding: 0.35rem 0.75rem;
+        border-radius: var(--radius-full);
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 0.8rem;
     }
 
-    .sample-result.positive {
+    .result-badge-small.positive {
+        background: #FEE2E2;
         color: #DC2626;
     }
 
-    .sample-result.negative {
+    .result-badge-small.negative {
+        background: #DBEAFE;
         color: #2563EB;
+    }
+
+    .confidence-value {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        font-weight: 600;
     }
 
     /* Action Buttons */
@@ -295,13 +306,6 @@
             <div class="summary-stat-value">{{ batch_results|length }}</div>
             <div class="summary-stat-label">Files Processed</div>
         </div>
-        <div class="summary-stat">
-            <div class="summary-stat-value">
-                {% set total_samples = batch_results|map(attribute='sample_count')|sum %}
-                {{ total_samples }}
-            </div>
-            <div class="summary-stat-label">Total Samples</div>
-        </div>
         {% if rejected_files %}
         <div class="summary-stat">
             <div class="summary-stat-value" style="color: #DC2626;">{{ rejected_files|length }}</div>
@@ -340,40 +344,36 @@
                 </div>
                 <div class="file-meta">
                     <div class="meta-item">
-                        <span class="mdi mdi-test-tube"></span>
-                        {{ result.sample_count }} sample(s)
-                    </div>
-                    <div class="meta-item">
                         <span class="mdi mdi-check-circle"></span>
-                        {{ "%.0f" | format(result.validation_confidence * 100) }}% confidence
+                        {{ "%.0f" | format(result.validation_confidence * 100) }}% validation
                     </div>
                 </div>
             </div>
 
-            <!-- Image with Overlays -->
+            <!-- Image -->
             <div class="file-image-container">
                 <img src="data:image/jpeg;base64,{{ result.image_b64 }}" alt="{{ result.filename }}">
-                <div class="sample-overlay">
-                    {% for sample in result.samples %}
-                    <div class="result-badge" style="left: {{ sample.x_percent }}%; top: {{ sample.y_percent }}%;">
-                        <div class="badge-content {% if sample.blood_type == 'POS' %}positive{% else %}negative{% endif %}">
-                            {{ sample.blood_type }}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
             </div>
 
-            <!-- Sample Results Summary -->
-            <div class="samples-summary">
-                <div class="samples-title">Sample Results</div>
-                <div class="samples-list">
-                    {% for sample in result.samples %}
-                    <div class="sample-item {% if sample.blood_type == 'POS' %}positive{% else %}negative{% endif %}">
-                        <span class="sample-label">Sample #{{ sample.sample_index }}</span>
-                        <span class="sample-result {% if sample.blood_type == 'POS' %}positive{% else %}negative{% endif %}">
-                            {{ sample.blood_type }}
-                        </span>
+            <!-- Blood Type Display -->
+            <div class="blood-type-display">
+                <div class="blood-type-label">Blood Type Result</div>
+                <div class="blood-type-value">{{ result.blood_type }}</div>
+            </div>
+
+            <!-- Analysis Results -->
+            <div class="analysis-summary">
+                <div class="analysis-title">Detailed Analysis</div>
+                <div class="analysis-list">
+                    {% for analysis in result.analysis_results %}
+                    <div class="analysis-item {% if analysis.agglutination %}positive{% else %}negative{% endif %}">
+                        <span class="analysis-antibody">{{ analysis.name }}</span>
+                        <div class="analysis-result">
+                            <span class="result-badge-small {% if analysis.agglutination %}positive{% else %}negative{% endif %}">
+                                {% if analysis.agglutination %}POSITIVE{% else %}NEGATIVE{% endif %}
+                            </span>
+                            <span class="confidence-value">{{ analysis.confidence }}%</span>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
