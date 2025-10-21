@@ -14,7 +14,7 @@ from skimage.feature import graycomatrix, graycoprops
 from datetime import datetime
 import cv2
 
-# ============== IMPORT BLOOD IMAGE VALIDATOR ==============
+#IMPORT BLOOD IMAGE VALIDATOR
 from blood_validator import BloodImageValidator
 
 #App & Database Configuration 
@@ -25,7 +25,7 @@ app.config['SECRET_KEY'] = 'your-secret-key-here-change-this-in-production'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB for batch uploads
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize Flask-Login
+# chale the flask webframe 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -74,10 +74,7 @@ BLOOD_TYPE_RULES = {
     (True, True, True): "AB+", (True, True, False): "AB-",
     (False, False, True): "O+", (False, False, False): "O-",
 }
-
-# ==============================================================================
 # Core Analysis Functions
-# ==============================================================================
 def preprocess_for_model(img_pil):
     img_resized = img_pil.resize(MODEL_IMG_SIZE)
     img_array = np.array(img_resized)
@@ -129,9 +126,7 @@ def analyze_single_section(img_pil):
         "features": features
     }
 
-# ==============================================================================
 # Flask Routes
-# ==============================================================================
 
 @app.route('/')
 def landing():
@@ -260,7 +255,7 @@ def report(report_id):
 def view_report(report_id):
     return redirect(url_for('report', report_id=report_id))
 
-# ============== UPDATED BATCH PROCESSING (MULTI-FILE) ==============
+# BATCH PROCESSING 
 @app.route('/batch', methods=['GET', 'POST'])
 @login_required
 def batch_process():
