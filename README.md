@@ -14,3 +14,4 @@ Detailed Results: Displays the final blood type and shows the original and segme
 
 How to Run
 This application can be run locally, in GitHub Codespaces, or using Docker. Please refer to the full guide for detailed instructions.
+You can run this by cloning this into your IDE, (codespaces), downloading all requirements and dependencies and then running the command python app.py in your terminal.
